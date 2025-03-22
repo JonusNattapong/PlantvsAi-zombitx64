@@ -3,542 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เกม Zombitx64</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #121212;
-            color: #ffffff;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-        
-        h1 {
-            font-size: 48px;
-            color: #ff5722;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
-        }
-        
-        .subtitle {
-            font-size: 20px;
-            color: #aaaaaa;
-            margin-bottom: 30px;
-        }
-        
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        
-        .game-card {
-            background-color: #1e1e1e;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .game-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-        }
-        
-        .game-image {
-            width: 100%;
-            height: 180px;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        .poker-image {
-            background-image: url('https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
-        }
-        
-        .tictactoe-image {
-            background-image: url('https://images.unsplash.com/photo-1611996575749-79a3a250f948?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
-        }
-        
-        .chess-image {
-            background-image: url('https://images.unsplash.com/photo-1560174038-da43ac74f01b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
-        }
-        
-        .checkers-image {
-            background-image: url('https://images.unsplash.com/photo-1610570111131-17faca56a8fc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
-        }
-        
-        .game-info {
-            padding: 20px;
-        }
-        
-        .game-title {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #ff5722;
-        }
-        
-        .game-description {
-            color: #aaaaaa;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .game-btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #ff5722;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s;
-        }
-        
-        .game-btn:hover {
-            background-color: #e64a19;
-        }
-        
-        footer {
-            margin-top: 50px;
-            text-align: center;
-            padding: 20px;
-            color: #777777;
-            font-size: 14px;
-        }
-        
-        @media (max-width: 768px) {
-            .games-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-12">
-                <h1 class="text-center mb-5">PlantvsAi เกมกระดานพร้อม AI</h1>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2>เลือกเกมที่ต้องการเล่น</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <img src="/static/images/tictactoe.png" class="card-img-top" alt="Tic Tac Toe">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">Tic Tac Toe</h5>
-                                        <p class="card-text">เกม XO คลาสสิกต่อเรียง 3 ตัว</p>
-                                        <a href="/tictactoe" class="btn btn-primary">เล่นเลย</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <img src="/static/images/connect_four.png" class="card-img-top" alt="Connect Four">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">Connect Four</h5>
-                                        <p class="card-text">ต่อเรียง 4 ตัวในแนวใดก็ได้</p>
-                                        <a href="/connect_four" class="btn btn-primary">เล่นเลย</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <img src="/static/images/checkers.png" class="card-img-top" alt="Checkers">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">Checkers</h5>
-                                        <p class="card-text">เกมหมากฮอสที่ท้าทาย</p>
-                                        <a href="/checkers" class="btn btn-primary">เล่นเลย</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <img src="/static/images/chess.png" class="card-img-top" alt="Chess">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">Chess</h5>
-                                        <p class="card-text">เกมหมากรุกสากลสุดคลาสสิก</p>
-                                        <a href="/chess" class="btn btn-primary">เล่นเลย</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <img src="/static/images/poker.png" class="card-img-top" alt="Poker">
-                                    <div class="card-body text-center">
-                                        <h5 class="card-title">Poker</h5>
-                                        <p class="card-text">เกมไพ่โป๊กเกอร์ Texas Hold'em</p>
-                                        <a href="/poker" class="btn btn-primary">เล่นเลย</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2>เลือก AI ที่ต้องการเล่นด้วย</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Minimax</h5>
-                                        <p class="card-text">AI คำนวณแบบรอบด้าน</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="0">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Pattern Recognition</h5>
-                                        <p class="card-text">AI จดจำรูปแบบการเล่น</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="1">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Q-Learning</h5>
-                                        <p class="card-text">AI เรียนรู้ด้วย Reinforcement Learning</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="2">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Neural Network</h5>
-                                        <p class="card-text">AI เครือข่ายประสาทเทียม</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="3">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">MCTS</h5>
-                                        <p class="card-text">Monte Carlo Tree Search</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="4">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Genetic Algorithm</h5>
-                                        <p class="card-text">AI แบบวิวัฒนาการ</p>
-                                        <button class="btn btn-outline-primary btn-sm ai-select" data-ai="5">เลือก</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2>สถิติการเล่น</h2>
-                        <ul class="nav nav-tabs card-header-tabs" id="statsTab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link active" id="summary-tab" data-toggle="tab" href="#summary" role="tab" aria-controls="summary" aria-selected="true">สรุป</a>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link" id="tictactoe-tab" data-toggle="tab" href="#tictactoe-stats" role="tab" aria-controls="tictactoe-stats" aria-selected="false">Tic Tac Toe</a>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <a class="nav-link" id="poker-tab" data-toggle="tab" href="#poker-stats" role="tab" aria-controls="poker-stats" aria-selected="false">Poker</a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body">
-                        <div class="tab-content" id="statsTabContent">
-                            <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
-                                <h5>สถิติโดยรวม</h5>
-                                <div id="summary-stats">
-                                    <div class="text-center">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="sr-only">กำลังโหลด...</span>
-                                        </div>
-                                        <p class="mt-2">กำลังโหลดสถิติ...</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="tictactoe-stats" role="tabpanel" aria-labelledby="tictactoe-tab">
-                                <h5>สถิติเกม Tic Tac Toe</h5>
-                                <div id="tictactoe-stats-content">
-                                    <div class="text-center">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="sr-only">กำลังโหลด...</span>
-                                        </div>
-                                        <p class="mt-2">กำลังโหลดสถิติ...</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="poker-stats" role="tabpanel" aria-labelledby="poker-tab">
-                                <h5>สถิติเกม Poker</h5>
-                                <div id="poker-stats-content">
-                                    <div class="text-center">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="sr-only">กำลังโหลด...</span>
-                                        </div>
-                                        <p class="mt-2">กำลังโหลดสถิติ...</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js"></script>
+    <title>PlantvsAi - Zombitx64</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        $(document).ready(function() {
-            let selectedAI = "0"; // Default AI
-
-            // เลือก AI
-            $(".ai-select").click(function() {
-                selectedAI = $(this).data("ai");
-                $(".ai-select").removeClass("btn-primary").addClass("btn-outline-primary");
-                $(this).removeClass("btn-outline-primary").addClass("btn-primary");
-            });
-
-            // เพิ่ม AI parameter ให้กับลิงก์เกม
-            $("a[href]").each(function() {
-                let href = $(this).attr("href");
-                if (href.startsWith("/tictactoe") || href.startsWith("/connect_four") || 
-                    href.startsWith("/checkers") || href.startsWith("/chess") || 
-                    href.startsWith("/poker")) {
-                    $(this).click(function(e) {
-                        e.preventDefault();
-                        window.location.href = href + "?ai=" + selectedAI;
-                    });
-                }
-            });
-
-            // โหลดสถิติ
-            loadStats();
-        });
-
-        function loadStats() {
-            // โหลดสถิติทั้งหมด
-            $.ajax({
-                url: '/api/stats/summary',
-                method: 'GET',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        displaySummaryStats(response.summary);
-                    } else {
-                        $("#summary-stats").html('<p class="text-danger">ไม่สามารถโหลดสถิติได้</p>');
-                    }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#ff4e50',
+                            hover: '#f9d423',
+                        },
+                        dark: {
+                            DEFAULT: '#1a1a2e',
+                            secondary: '#16213e',
+                        },
+                    },
                 },
-                error: function() {
-                    $("#summary-stats").html('<p class="text-danger">เกิดข้อผิดพลาดในการโหลดสถิติ</p>');
-                }
-            });
-
-            // โหลดสถิติเกม Tic Tac Toe
-            $.ajax({
-                url: '/api/stats/summary?game_type=tictactoe',
-                method: 'GET',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        displayGameStats('tictactoe', response.summary);
-                    } else {
-                        $("#tictactoe-stats-content").html('<p class="text-danger">ไม่สามารถโหลดสถิติได้</p>');
-                    }
-                },
-                error: function() {
-                    $("#tictactoe-stats-content").html('<p class="text-danger">เกิดข้อผิดพลาดในการโหลดสถิติ</p>');
-                }
-            });
-
-            // โหลดสถิติเกม Poker
-            $.ajax({
-                url: '/api/stats/summary?game_type=poker',
-                method: 'GET',
-                success: function(response) {
-                    if (response.status === 'success') {
-                        displayGameStats('poker', response.summary);
-                    } else {
-                        $("#poker-stats-content").html('<p class="text-danger">ไม่สามารถโหลดสถิติได้</p>');
-                    }
-                },
-                error: function() {
-                    $("#poker-stats-content").html('<p class="text-danger">เกิดข้อผิดพลาดในการโหลดสถิติ</p>');
-                }
-            });
-        }
-
-        function displaySummaryStats(stats) {
-            let html = `
-                <div class="card text-center mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">เกมทั้งหมด</h5>
-                        <p class="card-text display-4">${stats.total_games}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">ชนะ</h5>
-                                <p class="card-text text-success h4">${stats.player_wins}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">เสมอ</h5>
-                                <p class="card-text text-warning h4">${stats.draws}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">แพ้</h5>
-                                <p class="card-text text-danger h4">${stats.ai_wins}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5 class="card-title">อัตราการชนะ</h5>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" role="progressbar" style="width: ${stats.win_rate}%;" aria-valuenow="${stats.win_rate}" aria-valuemin="0" aria-valuemax="100">${stats.win_rate.toFixed(1)}%</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // แสดงสถิติแยกตามโหมด AI
-            if (Object.keys(stats.ai_mode_stats).length > 0) {
-                html += '<h5 class="mt-4">สถิติตามโหมด AI</h5>';
-                
-                for (const [mode, modeStats] of Object.entries(stats.ai_mode_stats)) {
-                    const total = modeStats.wins + modeStats.losses + modeStats.draws;
-                    const winRate = total > 0 ? (modeStats.losses / total * 100).toFixed(1) : 0;
-                    
-                    html += `
-                        <div class="card mb-2">
-                            <div class="card-body">
-                                <h6 class="card-title">${getAIModeName(mode)}</h6>
-                                <div class="row">
-                                    <div class="col-8">
-                                        <div class="progress">
-                                            <div class="progress-bar bg-success" role="progressbar" style="width: ${winRate}%;" aria-valuenow="${winRate}" aria-valuemin="0" aria-valuemax="100">${winRate}%</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 text-right">
-                                        ${modeStats.losses}W-${modeStats.draws}D-${modeStats.wins}L
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-
-            $("#summary-stats").html(html);
-        }
-
-        function displayGameStats(gameType, stats) {
-            let contentId = `#${gameType}-stats-content`;
-            
-            let html = `
-                <div class="row">
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">ชนะ</h5>
-                                <p class="card-text text-success h4">${stats.player_wins}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">เสมอ</h5>
-                                <p class="card-text text-warning h4">${stats.draws}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="card text-center mb-3">
-                            <div class="card-body">
-                                <h5 class="card-title">แพ้</h5>
-                                <p class="card-text text-danger h4">${stats.ai_wins}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            if (stats.total_games > 0) {
-                html += `
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">อัตราการชนะ</h5>
-                            <div class="progress">
-                                <div class="progress-bar bg-success" role="progressbar" style="width: ${stats.win_rate}%;" aria-valuenow="${stats.win_rate}" aria-valuemin="0" aria-valuemax="100">${stats.win_rate.toFixed(1)}%</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                html += '<p class="text-muted">ยังไม่มีข้อมูลสถิติการเล่น</p>';
-            }
-
-            $(contentId).html(html);
-        }
-
-        function getAIModeName(mode) {
-            const modeNames = {
-                "0": "Minimax",
-                "1": "Pattern Recognition",
-                "2": "Q-Learning",
-                "3": "Neural Network",
-                "4": "MCTS",
-                "5": "Genetic Algorithm"
-            };
-            return modeNames[mode] || mode;
+            },
         }
     </script>
+</head>
+<body class="font-kanit bg-gradient-to-br from-dark to-dark-secondary text-white min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <header class="text-center mb-12 p-10 bg-white/5 rounded-2xl backdrop-blur-lg">
+            <h1 class="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent drop-shadow-lg">
+                PlantvsAi - Zombitx64
+            </h1>
+            <div class="text-xl text-gray-400">
+                เกมกระดานที่ท้าทายด้วย AI ขั้นสูง
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 p-4">
+            <!-- Tic Tac Toe Card -->
+            <div class="group bg-white/10 rounded-2xl p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:bg-white/15 hover:border-white/30 border border-white/10 cursor-pointer overflow-hidden relative">
+                <div class="w-20 h-20 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center text-4xl">
+                    ⭕
+                </div>
+                <h3 class="text-2xl font-medium mb-3">Tic Tac Toe</h3>
+                <p class="text-gray-400 mb-6">
+                    เกม XO คลาสสิกที่มาพร้อมกับ AI หลากหลายระดับ
+                </p>
+                <a href="/tictactoe" class="inline-block px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-full font-medium transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+                    เล่นเลย
+                </a>
+            </div>
+
+            <!-- Connect Four Card -->
+            <div class="group bg-white/10 rounded-2xl p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:bg-white/15 hover:border-white/30 border border-white/10 cursor-pointer overflow-hidden relative">
+                <div class="w-20 h-20 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center text-4xl">
+                    🔵
+                </div>
+                <h3 class="text-2xl font-medium mb-3">Connect Four</h3>
+                <p class="text-gray-400 mb-6">
+                    เกมต่อเรียง 4 ที่ท้าทายความคิด
+                </p>
+                <a href="/connect_four" class="inline-block px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-full font-medium transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+                    เล่นเลย
+                </a>
+            </div>
+
+            <!-- Checkers Card -->
+            <div class="group bg-white/10 rounded-2xl p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:bg-white/15 hover:border-white/30 border border-white/10 cursor-pointer overflow-hidden relative">
+                <div class="w-20 h-20 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center text-4xl">
+                    👑
+                </div>
+                <h3 class="text-2xl font-medium mb-3">Checkers</h3>
+                <p class="text-gray-400 mb-6">
+                    หมากฮอส กับ AI ที่ชาญฉลาด
+                </p>
+                <a href="/checkers" class="inline-block px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-full font-medium transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+                    เล่นเลย
+                </a>
+            </div>
+
+            <!-- Poker Card -->
+            <div class="group bg-white/10 rounded-2xl p-6 text-center transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:bg-white/15 hover:border-white/30 border border-white/10 cursor-pointer overflow-hidden relative">
+                <div class="w-20 h-20 mx-auto mb-6 bg-white/10 rounded-full flex items-center justify-center text-4xl">
+                    ♠️
+                </div>
+                <h3 class="text-2xl font-medium mb-3">Poker</h3>
+                <p class="text-gray-400 mb-6">
+                    โป๊กเกอร์ที่ใช้ AI ขั้นสูง ZomPokerX64
+                </p>
+                <a href="/poker" class="inline-block px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-full font-medium transition-transform duration-300 hover:scale-105 hover:shadow-lg">
+                    เล่นเลย
+                </a>
+            </div>
+        </div>
+
+        <footer class="text-center py-8 mt-12 text-gray-400 text-sm">
+            <p>© 2024 PlantvsAi-zombitx64. พัฒนาด้วย ❤️ โดย Zombitx64 Team</p>
+        </footer>
+    </div>
+
+    <script src="/static/js/dist/main.js" type="module"></script>
 </body>
 </html>
