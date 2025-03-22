@@ -61,17 +61,18 @@ except:
     # Fallback
     FONT = pygame.font.SysFont('Arial', font_size_medium)
     LARGE_FONT = pygame.font.SysFont('Arial', font_size_large)
-    XLARGE_FONT = pygame.font.SysFont('Arial', font_size_xlarge, bold=True) 
+    XLARGE_FONT = pygame.font.SysFont('Arial', font_size_xlarge, bold=True)
     SMALL_FONT = pygame.font.SysFont('Arial', font_size_small)
     FONT_BOLD = pygame.font.SysFont('Arial', font_size_medium, bold=True)
 
 # Game state
 in_welcome_screen = True
 in_game = False
-board = [[None for x in range(BOARD_COLS)] for y in range(BOARD_ROWS)]
 game_over = False
-player_turn = True  # True for player, False for AI
+show_results_overlay = False
 winner = None
+player_turn = True  # True for player, False for AI
+board = [[None for x in range(BOARD_COLS)] for y in range(BOARD_ROWS)]
 
 # AI setup
 ai_modes = ["Minimax", "Pattern Recognition"]
@@ -157,7 +158,7 @@ def handle_resize(width, height):
         draw_ai_selector()
         
         # Redraw game over overlay if needed
-        if game_over:
+        if game_over and show_results_overlay:
             draw_game_over_overlay()
 
 def create_rounded_rect(width, height, radius=10):
@@ -425,7 +426,8 @@ def handle_welcome_click(pos):
 
 def start_game():
     """Initialize and start a new game"""
-    global board, game_over, player_turn, winner, current_game_moves
+    global board, game_over, player_turn, winner, current_game_moves, show_results_overlay
+    
     screen.fill(THEME["bg_primary"])
     draw_board()
     draw_stats_panel()
@@ -435,6 +437,9 @@ def start_game():
     player_turn = True
     winner = None
     current_game_moves = []
+    show_results_overlay = False
+    
+    pygame.display.update()
 
 def draw_board():
     """Draw the game board with modern styling"""
@@ -799,13 +804,14 @@ def draw_game_over_overlay():
 
 def reset_game():
     """Reset the game to start a new round"""
-    global board, game_over, player_turn, winner, current_game_moves
+    global board, game_over, player_turn, winner, current_game_moves, show_results_overlay
     
     board = [[None for x in range(BOARD_COLS)] for y in range(BOARD_ROWS)]
     game_over = False
     winner = None
     player_turn = True
     current_game_moves = []
+    show_results_overlay = False
     
     # Redraw game screen
     screen.fill(THEME["bg_primary"])
@@ -1305,6 +1311,27 @@ def draw_stats_panel():
         label_text = SMALL_FONT.render(stat["label"], True, THEME["text_secondary"])
         screen.blit(label_text, (box_x + box_width//2 - label_text.get_width()//2, 
                               box_y + box_height - label_text.get_height() - 15))
+    
+    # Draw "Show Results" button
+    button_width = 180
+    button_height = 40
+    button_x = WIDTH // 2 - button_width // 2
+    button_y = box_y + box_height + 20
+    
+    # Check if game is over to determine button color
+    if game_over:
+        button_color = THEME["accent_primary"]
+        hover = False
+        
+        # Check if mouse is hovering over button
+        mouse_pos = pygame.mouse.get_pos()
+        if (button_x <= mouse_pos[0] <= button_x + button_width and 
+            button_y <= mouse_pos[1] <= button_y + button_height):
+            hover = True
+            
+        # Draw the button with hover effect
+        draw_button("Show Results", (button_x, button_y, button_width, button_height), 
+                   button_color, hover=hover)
 
 def draw_ai_selector():
     """Draw the AI selector buttons during game with modern design"""
@@ -1354,8 +1381,38 @@ def draw_ai_selector():
 
 def handle_button_click(pos):
     """Handle button clicks and return True if a button was clicked"""
-    global current_ai_mode
+    global current_ai_mode, show_results_overlay
     mouseX, mouseY = pos
+    
+    # Check if "Show Results" button was clicked (only if game is over)
+    if game_over:
+        button_width = 180
+        button_height = 40
+        panel_y = 3 * SQUARE_SIZE
+        box_height = 80
+        
+        # Calculate stats boxes position to position the button below them
+        box_y = panel_y + 90
+        button_x = WIDTH // 2 - button_width // 2
+        button_y = box_y + box_height + 20
+        
+        if (button_x <= mouseX <= button_x + button_width and 
+            button_y <= mouseY <= button_y + button_height):
+            # Toggle results overlay
+            show_results_overlay = not show_results_overlay
+            
+            # Redraw the screen
+            screen.fill(THEME["bg_primary"])
+            draw_board()
+            draw_figures()
+            draw_stats_panel()
+            draw_ai_selector()
+            
+            if show_results_overlay:
+                draw_game_over_overlay()
+                
+            pygame.display.update()
+            return True
     
     # Check if AI selector buttons were clicked
     y_pos = HEIGHT - 60
@@ -1389,6 +1446,10 @@ def handle_button_click(pos):
                     draw_figures() 
                     draw_stats_panel()
                     draw_ai_selector()
+                    
+                    # Keep overlay visible if it was showing
+                    if show_results_overlay and game_over:
+                        draw_game_over_overlay()
                     
                     pygame.display.update()
                 return True
@@ -1515,7 +1576,7 @@ while True:
                     draw_stats_panel()
                     draw_ai_selector()
                     
-                    if game_over:
+                    if game_over and show_results_overlay:
                         draw_game_over_overlay()
     
     # AI's turn
@@ -1526,5 +1587,3 @@ while True:
         ai_move()
     
     pygame.display.update()
-
-# This is the end of the implementation code for the Tic Tac Toe game.
