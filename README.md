@@ -7,7 +7,7 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented in both desk
 
 ## Video
 
-[Watch Video](/static/demo.mp4)
+[Watch Video](https://youtu.be/L88agPTTn9M)
 
 ## Features
 
@@ -25,7 +25,7 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented in both desk
 
 ![Screenshot](./static/image1.png)
 
-![Screenshot](/static/image.png)
+![Screenshot](./static/image.png)
 
 ## System Architecture
 
