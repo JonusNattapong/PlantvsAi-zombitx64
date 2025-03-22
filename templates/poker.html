@@ -5,261 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker - AI vs Player</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <style>
-        .poker-table {
-            width: 800px;
-            height: 400px;
-            background-color: #076324;
-            border-radius: 200px;
-            margin: 20px auto;
-            position: relative;
-            border: 15px solid #5D4037;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        }
-        
-        .community-cards {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            gap: 10px;
-        }
-        
-        .player-area {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .ai-area {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .player-hand, .ai-hand {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .card {
-            width: 70px;
-            height: 100px;
-            background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            position: relative;
-            border: 1px solid #ddd;
-        }
-        
-        .card.hearts, .card.diamonds {
-            color: red;
-        }
-        
-        .card.clubs, .card.spades {
-            color: black;
-        }
-        
-        .card .rank {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-            font-size: 16px;
-        }
-        
-        .card .suit {
-            position: absolute;
-            top: 20px;
-            left: 5px;
-            font-size: 16px;
-        }
-        
-        .card.back {
-            background: repeating-linear-gradient(
-                45deg,
-                #b5651d,
-                #b5651d 10px,
-                #a55a1b 10px,
-                #a55a1b 20px
-            );
-        }
-        
-        .pot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, 40px);
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-        }
-        
-        .player-info, .ai-info {
-            color: white;
-            background-color: rgba(0,0,0,0.7);
-            padding: 5px 15px;
-            border-radius: 20px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .action-button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .action-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-        }
-        
-        .action-button.fold {
-            background-color: #ef5350;
-            color: white;
-        }
-        
-        .action-button.check {
-            background-color: #42a5f5;
-            color: white;
-        }
-        
-        .action-button.call {
-            background-color: #66bb6a;
-            color: white;
-        }
-        
-        .action-button.raise {
-            background-color: #ffca28;
-            color: black;
-        }
-        
-        .bet-slider-container {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 10px;
-            width: 100%;
-            max-width: 300px;
-        }
-        
-        .bet-slider {
-            width: 100%;
-            margin-bottom: 10px;
-        }
-        
-        .bet-amount {
-            font-weight: bold;
-            color: white;
-            margin-bottom: 5px;
-        }
-        
-        .confirm-bet {
-            padding: 5px 15px;
-            background-color: #8bc34a;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        
-        .game-stage {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: white;
-            background-color: rgba(0,0,0,0.7);
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        
-        .stats-panel {
-            width: 800px;
-            margin: 0 auto;
-            background-color: #37474F;
-            border-radius: 10px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        
-        .stat-box {
-            text-align: center;
-            padding: 10px;
-            background-color: #263238;
-            border-radius: 5px;
-            flex: 1;
-            margin: 0 5px;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-        
-        .winner-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .winner-overlay.active {
-            display: flex;
-        }
-        
-        .winner-message {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 500px;
-        }
-        
-        .winner-message h2 {
-            color: #333;
-            margin-top: 0;
-        }
-        
-        .winner-buttons {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/poker-styles.css">
 </head>
 <body>
     <h1>Poker - AI vs Player</h1>
@@ -317,6 +63,85 @@
     
     <div class="stats-panel">
         <div class="stat-box">
+            <div>Total Games</div>   transition: transform 0.3s ease-out;
+            <div class="stat-value" id="total-games">0</div>}
+        </div>
+        <div class="stat-box">
+            <div>Player Wins</div>   transform: translateY(-10px);
+            <div class="stat-value" id="player-wins">0</div>    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        </div>
+        <div class="stat-box">
+            <div>AI Wins</div>
+            <div class="stat-value" id="ai-wins">0</div>.deal-animation {
+        </div>: deal-card 0.5s ease-out;
+        <div class="stat-box">
+            <div>Win Rate</div>
+            <div class="stat-value" id="win-rate">0%</div>l-card {
+        </div>
+        <div class="stat-box">       opacity: 0;
+            <div>Biggest Pot</div>        transform: translateY(-50px) rotate(-10deg);
+            <div class="stat-value" id="biggest-pot">$0</div>
+        </div>
+    </div>y: 1;
+    orm: translateY(0) rotate(0);
+    <div class="winner-overlay" id="winner-overlay">
+        <div class="winner-message">
+            <h2 id="winner-text">Player Wins!</h2>
+            <div id="hand-description"></div>on {
+            <div class="winner-buttons">
+                <button id="play-again-btn">Play Again</button>
+                <button id="return-to-menu-btn">Return to Menu</button>
+            </div>
+        </div>
+    </div>
+      transform: translateY(-20px);
+    <script src="/static/poker.js"></script>   }
+</body>    100% {
+</html>  opacity: 1;
+    <div class="poker-table">
+        <div class="game-stage" id="game-stage">Pre-Flop</div>
+        <div class="sound-control" id="sound-toggle">🔊</div>
+        
+        <div class="ai-area">
+            <div class="ai-info" id="ai-info">AI: $1000</div>
+            <div class="ai-hand" id="ai-hand">
+                <div class="card back"></div>
+                <div class="card back"></div>
+            </div>
+        </div>
+        
+        <div class="community-cards" id="community-cards">
+            <!-- Community cards will be added here -->
+        </div>
+        
+        <div class="pot" id="pot">Pot: $0</div>
+        
+        <div class="player-area">
+            <div class="player-info" id="player-info">Player: $1000</div>
+            <div class="player-hand" id="player-hand">
+                <!-- Player cards will be added here -->
+            </div>
+            <div class="action-buttons" id="action-buttons">
+                <button class="action-button fold" id="fold-btn">Fold</button>
+                <button class="action-button check" id="check-btn">Check</button>
+                <button class="action-button call" id="call-btn">Call</button>
+                <button class="action-button raise" id="raise-btn">Raise</button>
+            </div>
+            <div class="bet-slider-container" id="bet-slider-container">
+                <div class="bet-amount" id="bet-amount">Bet: $<span id="bet-value">10</span></div>
+                <input type="range" class="bet-slider" id="bet-slider" min="10" max="1000" step="10" value="10">
+                <button class="confirm-bet" id="confirm-bet-btn">Confirm Bet</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="new-game-btn">New Game</button>
+        <button id="back-to-menu-btn">Back to Menu</button>
+    </div>
+    
+    <div class="stats-panel">
+        <div class="stat-box">
             <div>Total Games</div>
             <div class="stat-value" id="total-games">0</div>
         </div>
@@ -330,7 +155,7 @@
         </div>
         <div class="stat-box">
             <div>Win Rate</div>
-            <div class="stat-value" id="win-rate">0%</div>
+            <div class="stat-value" id="win-rate">0%</</div>
         </div>
         <div class="stat-box">
             <div>Biggest Pot</div>
@@ -341,7 +166,7 @@
     <div class="winner-overlay" id="winner-overlay">
         <div class="winner-message">
             <h2 id="winner-text">Player Wins!</h2>
-            <div id="hand-description"></div>
+            <div id="hand-description" class="hand-description"></div>
             <div class="winner-buttons">
                 <button id="play-again-btn">Play Again</button>
                 <button id="return-to-menu-btn">Return to Menu</button>

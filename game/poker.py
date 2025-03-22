@@ -1,7 +1,7 @@
 import json
 import os
 import random
-import numpy as np
+import numpy np
 from collections import Counter
 
 class Card:
@@ -411,12 +411,26 @@ class PokerGame:
                     'current_bet': player.current_bet,
                     'is_folded': player.is_folded,
                     'is_all_in': player.is_all_in,
-                    'hand': player.hand.to_dict() if player.name == "Player" or show_ai_cards else []
+                    'hand': player.hand.to_dict() if player.name == "Player" or show_ai_cards else [],
+                    'hand_name': getattr(player, 'hand_name', None) if player.name == "Player" or show_ai_cards or self.game_stage == "showdown" else None
                 }
                 for player in self.players
             ],
             'current_player': self.players[self.current_player_idx].name,
-            'winner': self.winner
+            'winner': self.winner,
+            # Add hand descriptions
+            'hand_descriptions': {
+                'high_card': 'High Card',
+                'pair': 'Pair',
+                'two_pair': 'Two Pair',
+                'three_of_a_kind': 'Three of a Kind',
+                'straight': 'Straight',
+                'flush': 'Flush',
+                'full_house': 'Full House',
+                'four_of_a_kind': 'Four of a Kind',
+                'straight_flush': 'Straight Flush',
+                'royal_flush': 'Royal Flush'
+            }
         }
         return state
     
@@ -460,6 +474,7 @@ class PokerGame:
             
             # Save best hand
             hand_name, _ = active_players[0].hand.get_hand_rank(self.community_cards)
+            active_players[0].hand_name = hand_name  # Store the hand name
             self.update_stats("default", self.winner, self.pot, hand_name)
             
             return
@@ -470,6 +485,8 @@ class PokerGame:
         
         for player in active_players:
             hand_name, _ = player.hand.get_hand_rank(self.community_cards)
+            player.hand_name = hand_name  # Store the hand name for each player
+            
             if best_player is None:
                 best_player = player
                 best_hand_name = hand_name

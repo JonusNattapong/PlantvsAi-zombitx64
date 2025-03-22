@@ -107,19 +107,40 @@ function createBoard() {
             
             // ถ้ามีข้อมูลกระดาน ให้แสดงหมาก
             if (gameState.board && gameState.board[row][col]) {
-                const piece = document.createElement('div');
-                piece.className = 'piece';
-                
-                const pieceData = gameState.board[row][col];
-                piece.classList.add(pieceData.color);
-                piece.textContent = PIECES[pieceData.color][pieceData.piece];
-                
-                square.appendChild(piece);
+                const pieceElement = createPieceElement(gameState.board[row][col]);
+                square.appendChild(pieceElement);
             }
             
             gameBoard.appendChild(square);
         }
     }
+}
+
+// Create a piece element from piece data
+function createPieceElement(pieceData) {
+    const pieceElement = document.createElement('div');
+    pieceElement.className = `piece ${pieceData.color}`;
+    
+    // Add piece symbol
+    pieceElement.textContent = PIECES[pieceData.color][pieceData.piece];
+    
+    // If we have SVG pieces, use them instead
+    const pieceImg = document.createElement('img');
+    pieceImg.src = `/static/svg_cards/${pieceData.piece}_${pieceData.color}.svg`;
+    pieceImg.alt = `${pieceData.piece} of ${pieceData.color}`;
+    pieceImg.onerror = () => {
+        // If SVG loading fails, use the text fallback (already created)
+        pieceImg.style.display = 'none';
+    };
+    pieceImg.style.width = '100%';
+    pieceImg.style.height = '100%';
+    pieceImg.style.position = 'absolute';
+    pieceImg.style.top = '0';
+    pieceImg.style.left = '0';
+    
+    pieceElement.appendChild(pieceImg);
+    
+    return pieceElement;
 }
 
 // อัปเดตกระดานจากสถานะเกม
@@ -139,14 +160,8 @@ function updateBoard() {
             
             // ถ้ามีหมากในตำแหน่งนี้ ให้สร้างใหม่
             if (gameState.board[row][col]) {
-                const piece = document.createElement('div');
-                piece.className = 'piece';
-                
-                const pieceData = gameState.board[row][col];
-                piece.classList.add(pieceData.color);
-                piece.textContent = PIECES[pieceData.color][pieceData.piece];
-                
-                square.appendChild(piece);
+                const pieceElement = createPieceElement(gameState.board[row][col]);
+                square.appendChild(pieceElement);
             }
         }
     }
@@ -597,3 +612,17 @@ function setupEventListeners() {
 
 // เริ่มต้นเกมเมื่อโหลดหน้าเสร็จ
 document.addEventListener('DOMContentLoaded', initGame);
+
+// ตัวอย่างการเพิ่มเสียงในอนาคต (ถ้าต้องการ)
+function loadChessSounds() {
+    const sounds = {
+        move: new Audio('/static/sounds/Audio/move.ogg'),
+        capture: new Audio('/static/sounds/Audio/capture.ogg'),
+        check: new Audio('/static/sounds/Audio/check.ogg'),
+        castle: new Audio('/static/sounds/Audio/castle.ogg'),
+        win: new Audio('/static/sounds/Audio/win.ogg'),
+        lose: new Audio('/static/sounds/Audio/lose.ogg')
+    };
+    
+    return sounds;
+}
