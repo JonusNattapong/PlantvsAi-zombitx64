@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker - AI vs Player</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/poker-styles.css">
 </head>
 <body>
@@ -22,92 +22,18 @@
     
     <div class="poker-table">
         <div class="game-stage" id="game-stage">Pre-Flop</div>
-        
-        <div class="ai-area">
-            <div class="ai-info" id="ai-info">AI: $1000</div>
-            <div class="ai-hand" id="ai-hand">
-                <div class="card back"></div>
-                <div class="card back"></div>
-            </div>
-        </div>
-        
-        <div class="community-cards" id="community-cards">
-            <!-- Community cards will be added here -->
-        </div>
-        
-        <div class="pot" id="pot">Pot: $0</div>
-        
-        <div class="player-area">
-            <div class="player-info" id="player-info">Player: $1000</div>
-            <div class="player-hand" id="player-hand">
-                <!-- Player cards will be added here -->
-            </div>
-            <div class="action-buttons" id="action-buttons">
-                <button class="action-button fold" id="fold-btn">Fold</button>
-                <button class="action-button check" id="check-btn">Check</button>
-                <button class="action-button call" id="call-btn">Call</button>
-                <button class="action-button raise" id="raise-btn">Raise</button>
-            </div>
-            <div class="bet-slider-container" id="bet-slider-container">
-                <div class="bet-amount" id="bet-amount">Bet: $<span id="bet-value">10</span></div>
-                <input type="range" class="bet-slider" id="bet-slider" min="10" max="1000" step="10" value="10">
-                <button class="confirm-bet" id="confirm-bet-btn">Confirm Bet</button>
-            </div>
-        </div>
-    </div>
-    
-    <div class="controls">
-        <button id="new-game-btn">New Game</button>
-        <button id="back-to-menu-btn">Back to Menu</button>
-    </div>
-    
-    <div class="stats-panel">
-        <div class="stat-box">
-            <div>Total Games</div>   transition: transform 0.3s ease-out;
-            <div class="stat-value" id="total-games">0</div>}
-        </div>
-        <div class="stat-box">
-            <div>Player Wins</div>   transform: translateY(-10px);
-            <div class="stat-value" id="player-wins">0</div>    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        </div>
-        <div class="stat-box">
-            <div>AI Wins</div>
-            <div class="stat-value" id="ai-wins">0</div>.deal-animation {
-        </div>: deal-card 0.5s ease-out;
-        <div class="stat-box">
-            <div>Win Rate</div>
-            <div class="stat-value" id="win-rate">0%</div>l-card {
-        </div>
-        <div class="stat-box">       opacity: 0;
-            <div>Biggest Pot</div>        transform: translateY(-50px) rotate(-10deg);
-            <div class="stat-value" id="biggest-pot">$0</div>
-        </div>
-    </div>y: 1;
-    orm: translateY(0) rotate(0);
-    <div class="winner-overlay" id="winner-overlay">
-        <div class="winner-message">
-            <h2 id="winner-text">Player Wins!</h2>
-            <div id="hand-description"></div>on {
-            <div class="winner-buttons">
-                <button id="play-again-btn">Play Again</button>
-                <button id="return-to-menu-btn">Return to Menu</button>
-            </div>
-        </div>
-    </div>
-      transform: translateY(-20px);
-    <script src="/static/poker.js"></script>   }
-</body>    100% {
-</html>  opacity: 1;
-    <div class="poker-table">
-        <div class="game-stage" id="game-stage">Pre-Flop</div>
         <div class="sound-control" id="sound-toggle">🔊</div>
         
         <div class="ai-area">
+            <div class="ai-avatar">
+                <img src="/static/images/ai-avatar.png" alt="AI Avatar" id="ai-avatar">
+            </div>
             <div class="ai-info" id="ai-info">AI: $1000</div>
             <div class="ai-hand" id="ai-hand">
                 <div class="card back"></div>
                 <div class="card back"></div>
             </div>
+            <div class="ai-thinking" id="ai-thinking">Thinking...</div>
         </div>
         
         <div class="community-cards" id="community-cards">
@@ -117,6 +43,9 @@
         <div class="pot" id="pot">Pot: $0</div>
         
         <div class="player-area">
+            <div class="player-avatar">
+                <img src="/static/images/player-avatar.png" alt="Player Avatar" id="player-avatar">
+            </div>
             <div class="player-info" id="player-info">Player: $1000</div>
             <div class="player-hand" id="player-hand">
                 <!-- Player cards will be added here -->
@@ -132,6 +61,13 @@
                 <input type="range" class="bet-slider" id="bet-slider" min="10" max="1000" step="10" value="10">
                 <button class="confirm-bet" id="confirm-bet-btn">Confirm Bet</button>
             </div>
+        </div>
+    </div>
+    
+    <div class="bet-history-container">
+        <h3>Bet History</h3>
+        <div class="bet-history" id="bet-history">
+            <!-- Bet history will be displayed here -->
         </div>
     </div>
     
@@ -155,7 +91,7 @@
         </div>
         <div class="stat-box">
             <div>Win Rate</div>
-            <div class="stat-value" id="win-rate">0%</</div>
+            <div class="stat-value" id="win-rate">0%</div>
         </div>
         <div class="stat-box">
             <div>Biggest Pot</div>
