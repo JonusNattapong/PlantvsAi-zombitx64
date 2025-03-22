@@ -2,7 +2,6 @@
 
 A Tic-tac-toe game with multiple AI opponent strategies implemented in both desktop (Pygame) and web application versions.
 
-
 ## Video
 
 [![Video](https://youtu.be/L88agPTTn9M?si=KlMIuSsvBM6sgKxh)](https://youtu.be/L88agPTTn9M?si=KlMIuSsvBM6sgKxh)
