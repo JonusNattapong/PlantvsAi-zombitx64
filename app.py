@@ -15,6 +15,13 @@ from game.poker import PokerGame, Card, Deck, PokerHand, PokerPlayer
 import uuid
 import sys
 
+# กำหนดพาธสำหรับบันทึกสถิติ
+STATISTICS_PATH = "D:/Zombitx64/Tictactoe-zombitx64/statistics"
+
+# ตรวจสอบว่าโฟลเดอร์มีอยู่หรือไม่ ถ้าไม่มีให้สร้างใหม่
+if not os.path.exists(STATISTICS_PATH):
+    os.makedirs(STATISTICS_PATH)
+
 # Add the DatasetPokerzombitx64 directory to the Python path
 sys.path.append('DatasetPokerzombitx64')
 
@@ -66,8 +73,9 @@ if ML_MODEL_AVAILABLE:
 # Load pattern data
 def load_pattern_data():
     try:
-        if os.path.exists('player_patterns.json'):
-            with open('player_patterns.json', 'r') as f:
+        pattern_file = os.path.join(STATISTICS_PATH, 'player_patterns.json')
+        if os.path.exists(pattern_file):
+            with open(pattern_file, 'r') as f:
                 return json.load(f)
     except Exception as e:
         print(f"Error loading pattern data: {e}")
@@ -78,7 +86,8 @@ def load_pattern_data():
 # Save pattern data
 def save_pattern_data(player_patterns):
     try:
-        with open('player_patterns.json', 'w') as f:
+        pattern_file = os.path.join(STATISTICS_PATH, 'player_patterns.json')
+        with open(pattern_file, 'w') as f:
             json.dump(player_patterns, f, indent=2)
     except Exception as e:
         print(f"Error saving pattern data: {e}")
@@ -710,22 +719,20 @@ def reset_game():
 
 @app.route('/api/get_stats', methods=['GET'])
 def get_stats():
-    game_type = request.args.get('game_type', 'TicTacToe')
+    """ดึงสถิติเกมโป๊กเกอร์ที่มีอยู่แล้ว พร้อมจัดเก็บลงไฟล์ในโฟลเดอร์สถิติ"""
+    session_id = session.get('session_id')
+    if not session_id or session_id not in games:
+        return jsonify({'status': 'error', 'message': 'No active game found'}), 404
     
-    if game_type == 'TicTacToe':
-        # Create a temporary game to get stats
-        temp_game = TicTacToe()
-        return jsonify(temp_game.stats)
-    elif game_type == 'ConnectFour':
-        # Create a temporary game to get stats
-        temp_game = ConnectFour()
-        return jsonify(temp_game.stats)
-    elif game_type == 'Checkers':
-        # Create a temporary game to get stats
-        temp_game = Checkers()
-        return jsonify(temp_game.stats)
+    game = games[session_id]
+    stats = game.get_stats()
     
-    return jsonify({"error": "Unknown game type"}), 400
+    # บันทึกสถิติลงในไฟล์
+    stats_file = os.path.join(STATISTICS_PATH, f"poker_stats_{session_id}.json")
+    with open(stats_file, 'w') as f:
+        json.dump(stats, f, indent=4)
+    
+    return jsonify({'status': 'success', 'stats': stats})
 
 @app.route('/api/get_game_types', methods=['GET'])
 def get_game_types():
@@ -1147,6 +1154,160 @@ def card_rank_to_value(rank):
     else:
         # Default case
         return 2
+
+@app.route('/api/stats/save', methods=['POST'])
+def save_game_stats():
+    """บันทึกสถิติเกม"""
+    game_type = request.json.get('game_type')
+    session_id = request.json.get('session_id')
+    stats = request.json.get('stats', {})
+    
+    if not game_type or not session_id:
+        return jsonify({'status': 'error', 'message': 'Missing game_type or session_id'}), 400
+    
+    # สร้างชื่อไฟล์ตามประเภทเกมและ session ID
+    filename = f"{game_type}_stats_{session_id}.json"
+    file_path = os.path.join(STATISTICS_PATH, filename)
+    
+    # บันทึกสถิติลงไฟล์
+    with open(file_path, 'w') as f:
+        json.dump(stats, f, indent=4)
+    
+    return jsonify({'status': 'success', 'message': f'Statistics for {game_type} saved successfully'})
+
+@app.route('/api/stats/load', methods=['GET'])
+def load_game_stats():
+    """โหลดสถิติเกม"""
+    game_type = request.args.get('game_type')
+    session_id = request.args.get('session_id')
+    
+    if not game_type or not session_id:
+        return jsonify({'status': 'error', 'message': 'Missing game_type or session_id'}), 400
+    
+    # สร้างชื่อไฟล์ตามประเภทเกมและ session ID
+    filename = f"{game_type}_stats_{session_id}.json"
+    file_path = os.path.join(STATISTICS_PATH, filename)
+    
+    # ตรวจสอบว่าไฟล์มีอยู่หรือไม่
+    if not os.path.exists(file_path):
+        return jsonify({'status': 'error', 'message': 'Statistics not found'}), 404
+    
+    # โหลดข้อมูลสถิติ
+    try:
+        with open(file_path, 'r') as f:
+            stats = json.load(f)
+        return jsonify({'status': 'success', 'stats': stats})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Error loading statistics: {str(e)}'}), 500
+
+@app.route('/api/stats/all', methods=['GET'])
+def get_all_stats():
+    """ดึงสถิติทั้งหมดของทุกเกม"""
+    all_stats = {
+        'tictactoe': [],
+        'connect_four': [],
+        'checkers': [],
+        'chess': [],
+        'poker': []
+    }
+    
+    # อ่านและรวบรวมไฟล์สถิติทั้งหมด
+    try:
+        for filename in os.listdir(STATISTICS_PATH):
+            if not filename.endswith('.json'):
+                continue
+            
+            file_path = os.path.join(STATISTICS_PATH, filename)
+            
+            try:
+                with open(file_path, 'r') as f:
+                    stats = json.load(f)
+                
+                if filename.startswith('tictactoe_'):
+                    all_stats['tictactoe'].append(stats)
+                elif filename.startswith('connect_four_'):
+                    all_stats['connect_four'].append(stats)
+                elif filename.startswith('checkers_'):
+                    all_stats['checkers'].append(stats)
+                elif filename.startswith('chess_'):
+                    all_stats['chess'].append(stats)
+                elif filename.startswith('poker_'):
+                    all_stats['poker'].append(stats)
+            except Exception as e:
+                print(f"Error loading stats file {filename}: {str(e)}")
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Error reading statistics directory: {str(e)}'}), 500
+    
+    return jsonify({'status': 'success', 'stats': all_stats})
+
+@app.route('/api/stats/summary', methods=['GET'])
+def get_stats_summary():
+    """สรุปสถิติโดยรวมของทุกเกม"""
+    game_type = request.args.get('game_type')
+    
+    summary = {
+        'total_games': 0,
+        'player_wins': 0,
+        'ai_wins': 0,
+        'draws': 0,
+        'ai_mode_stats': {}
+    }
+    
+    try:
+        pattern = f"{game_type}_stats_" if game_type else ""
+        
+        for filename in os.listdir(STATISTICS_PATH):
+            if not filename.endswith('.json') or (pattern and not filename.startswith(pattern)):
+                continue
+            
+            file_path = os.path.join(STATISTICS_PATH, filename)
+            
+            try:
+                with open(file_path, 'r') as f:
+                    stats = json.load(f)
+                
+                # สรุปข้อมูลตามรูปแบบของสถิติที่คาดว่าจะมี
+                if 'result' in stats:
+                    summary['total_games'] += 1
+                    
+                    if stats['result'] == 'win':
+                        summary['player_wins'] += 1
+                    elif stats['result'] == 'loss':
+                        summary['ai_wins'] += 1
+                    elif stats['result'] == 'draw':
+                        summary['draws'] += 1
+                
+                # บันทึกสถิติตามโหมด AI
+                if 'ai_mode' in stats:
+                    ai_mode = stats['ai_mode']
+                    if ai_mode not in summary['ai_mode_stats']:
+                        summary['ai_mode_stats'][ai_mode] = {
+                            'wins': 0,
+                            'losses': 0,
+                            'draws': 0
+                        }
+                    
+                    if stats.get('result') == 'win':
+                        summary['ai_mode_stats'][ai_mode]['losses'] += 1
+                    elif stats.get('result') == 'loss':
+                        summary['ai_mode_stats'][ai_mode]['wins'] += 1
+                    elif stats.get('result') == 'draw':
+                        summary['ai_mode_stats'][ai_mode]['draws'] += 1
+            except Exception as e:
+                print(f"Error processing stats file {filename}: {str(e)}")
+        
+        # คำนวณอัตราชนะ
+        if summary['total_games'] > 0:
+            summary['win_rate'] = (summary['player_wins'] / summary['total_games']) * 100
+        
+        # บันทึกข้อมูลสรุปลงไฟล์
+        summary_file = os.path.join(STATISTICS_PATH, f"{'game_stats' if not game_type else game_type + '_summary'}.json")
+        with open(summary_file, 'w') as f:
+            json.dump(summary, f, indent=2)
+        
+        return jsonify({'status': 'success', 'summary': summary})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Error generating statistics summary: {str(e)}'}), 500
 
 # Run the application
 if __name__ == '__main__':
