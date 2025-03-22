@@ -60,24 +60,19 @@ function initGame() {
     
     // Initialize sounds
     loadSounds();
+    
+    // Update UI based on game state
+    updateUI();
 }
 
 // Load sound effects
 function loadSounds() {
-    if (typeof Audio !== 'undefined') {
-        gameState.sounds.deal = new Audio('/static/sounds/card_deal.mp3');
-        gameState.sounds.chip = new Audio('/static/sounds/chip.mp3');
-        gameState.sounds.fold = new Audio('/static/sounds/fold.mp3');
-        gameState.sounds.check = new Audio('/static/sounds/check.mp3');
-        gameState.sounds.win = new Audio('/static/sounds/win.mp3');
-        gameState.sounds.lose = new Audio('/static/sounds/lose.mp3');
-    }
-    
-    // Add sound toggle button if it exists
-    const soundToggle = document.getElementById('sound-toggle');
-    if (soundToggle) {
-        soundToggle.addEventListener('click', toggleSound);
-    }
+    gameState.sounds.deal = new Audio('/static/sounds/Audio/deal.mp3');
+    gameState.sounds.chip = new Audio('/static/sounds/Audio/bet.mp3');
+    gameState.sounds.fold = new Audio('/static/sounds/Audio/fold.mp3');
+    gameState.sounds.check = new Audio('/static/sounds/Audio/check.mp3');
+    gameState.sounds.win = new Audio('/static/sounds/Audio/win.mp3');
+    gameState.sounds.lose = new Audio('/static/sounds/Audio/lose.mp3');
 }
 
 // Toggle sound on/off
@@ -92,8 +87,7 @@ function toggleSound() {
 // Play a sound if sound is enabled
 function playSound(soundName) {
     if (gameState.soundEnabled && gameState.sounds[soundName]) {
-        gameState.sounds[soundName].currentTime = 0;
-        gameState.sounds[soundName].play().catch(e => console.log("Error playing sound:", e));
+        gameState.sounds[soundName].play();
     }
 }
 
@@ -379,51 +373,27 @@ function aiMove() {
 
 // Update the UI based on current game state
 function updateUI() {
-    // Update pot
-    potText.textContent = `Pot: $${gameState.pot}`;
-    
-    // Update game stage
-    const stageNames = {
-        "pre_flop": "Pre-Flop",
-        "flop": "Flop",
-        "turn": "Turn",
-        "river": "River",
-        "showdown": "Showdown"
-    };
-    gameStageText.textContent = stageNames[gameState.gameStage] || gameState.gameStage;
-    
-    // Update player information
-    const player = gameState.players.find(p => p.name === 'Player');
-    const ai = gameState.players.find(p => p.name === 'AI');
-    
-    if (player) {
-        playerInfoText.textContent = `Player: $${player.chips} ${player.current_bet > 0 ? `(Bet: $${player.current_bet})` : ''}`;
-    }
-    
-    if (ai) {
-        aiInfoText.textContent = `AI: $${ai.chips} ${ai.current_bet > 0 ? `(Bet: $${ai.current_bet})` : ''}`;
-    }
-    
+    // Update basic information
+    document.getElementById('game-stage').textContent = gameState.gameStage.toUpperCase();
+    document.getElementById('pot-amount').textContent = gameState.pot;
+
+    // Update player and AI hands
+    updatePlayerHand();
+    updateAIHand();
+
     // Update community cards
     updateCommunityCards();
-    
-    // Update player hand
-    updatePlayerHand();
-    
-    // Update AI hand (face down unless showdown)
-    updateAIHand();
-    
-    // Update action buttons
-    updateActionButtons();
-    
-    // Update bet slider
-    updateBetSlider(player ? player.chips : 0);
-    
+
     // Update bet history
     updateBetHistory();
-    
-    // Update AI thinking indicator
-    updateAIThinking();
+
+    // Show game result if there's a winner
+    if (gameState.winner) {
+        showGameResult();
+    }
+
+    // Update action buttons
+    setupEventListeners();
 }
 
 // Update AI thinking indicator

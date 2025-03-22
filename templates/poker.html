@@ -3,113 +3,789 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poker - AI vs Player</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/poker-styles.css">
+    <title>Texas Hold'em Poker</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a5c2c;
+            color: white;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ffcc00;
+            padding-bottom: 10px;
+        }
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background-color: #164423;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .pot {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .stage {
+            font-size: 20px;
+            text-transform: uppercase;
+        }
+        .community-cards {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            min-height: 120px;
+            background-color: #164423;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .card {
+            width: 80px;
+            height: 120px;
+            background-color: white;
+            border-radius: 5px;
+            margin: 0 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: black;
+            font-size: 20px;
+            font-weight: bold;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .card.hearts, .card.diamonds {
+            color: red;
+        }
+        .card.clubs, .card.spades {
+            color: black;
+        }
+        .card .suit {
+            font-size: 36px;
+            margin-top: 5px;
+        }
+        .card .rank {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+        }
+        .card .suit-bottom {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 14px;
+        }
+        .players {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+        }
+        .player {
+            width: 48%;
+            background-color: #164423;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .player-hand {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .player-status {
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .chip-count {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        .current-bet {
+            color: #ff9900;
+        }
+        .hand-name {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .bet-history {
+            margin-top: 30px;
+            background-color: #164423;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .bet-history h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 5px;
+        }
+        .bet-history ul {
+            list-style-type: none;
+            padding: 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .bet-history li {
+            padding: 5px;
+            border-bottom: 1px dotted #2c7e46;
+        }
+        .bet-history li:last-child {
+            border-bottom: none;
+        }
+        .action-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-check {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-call {
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn-raise {
+            background-color: #FF9800;
+            color: white;
+        }
+        .btn-fold {
+            background-color: #f44336;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .bet-input {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .bet-input input {
+            width: 100px;
+            padding: 8px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+        .game-result {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc00;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.7;
+            }
+        }
+        .game-log {
+            margin-top: 20px;
+            background-color: #164423;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .game-log h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 5px;
+        }
+        .game-log p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .statistics {
+            margin-top: 30px;
+            background-color: #164423;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .statistics h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ffcc00;
+            padding-bottom: 5px;
+        }
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .statistic-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .statistic-value {
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .hidden {
+            display: none;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .players {
+                flex-direction: column;
+            }
+            .player {
+                width: auto;
+                margin-bottom: 20px;
+            }
+            .community-cards {
+                flex-wrap: wrap;
+            }
+            .statistics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Poker - AI vs Player</h1>
-    
-    <div class="ai-selector">
-        <label for="ai-mode">Select AI Level:</label>
-        <select id="ai-mode">
-            <option value="0">Simple AI</option>
-            <option value="1">Probability AI</option>
-            <option value="2">Advanced AI</option>
-        </select>
-        <button id="change-ai-btn">Change AI</button>
+    <div class="header">
+        <h1>Texas Hold'em Poker</h1>
     </div>
-    
-    <div class="poker-table">
-        <div class="game-stage" id="game-stage">Pre-Flop</div>
-        <div class="sound-control" id="sound-toggle">🔊</div>
-        
-        <div class="ai-area">
-            <div class="ai-avatar">
-                <img src="/static/images/ai-avatar.png" alt="AI Avatar" id="ai-avatar">
+
+    <div class="game-info">
+        <div class="stage">รอบ: <span id="game-stage">PRE-FLOP</span></div>
+        <div class="pot">พ็อต: <span id="pot-amount">15</span> ชิป</div>
+    </div>
+
+    <div class="community-cards" id="community-cards">
+        <!-- Community cards will be added here -->
+        <img class="card hidden" id="community-card-1" src="/static/svg_cards/ace_of_spades.svg" alt="Ace of Spades">
+        <img class="card hidden" id="community-card-2" src="/static/svg_cards/king_of_hearts.svg" alt="King of Hearts">
+        <img class="card hidden" id="community-card-3" src="/static/svg_cards/queen_of_diamonds.svg" alt="Queen of Diamonds">
+        <img class="card hidden" id="community-card-4" src="/static/svg_cards/jack_of_clubs.svg" alt="Jack of Clubs">
+        <img class="card hidden" id="community-card-5" src="/static/svg_cards/10_of_spades.svg" alt="10 of Spades">
+    </div>
+
+    <div class="players">
+        <div class="player" id="player">
+            <div class="player-name">
+                <span>ผู้เล่น</span>
+                <span class="chip-count">1000 ชิป</span>
             </div>
-            <div class="ai-info" id="ai-info">AI: $1000</div>
-            <div class="ai-hand" id="ai-hand">
-                <div class="card back"></div>
-                <div class="card back"></div>
-            </div>
-            <div class="ai-thinking" id="ai-thinking">Thinking...</div>
-        </div>
-        
-        <div class="community-cards" id="community-cards">
-            <!-- Community cards will be added here -->
-        </div>
-        
-        <div class="pot" id="pot">Pot: $0</div>
-        
-        <div class="player-area">
-            <div class="player-avatar">
-                <img src="/static/images/player-avatar.png" alt="Player Avatar" id="player-avatar">
-            </div>
-            <div class="player-info" id="player-info">Player: $1000</div>
             <div class="player-hand" id="player-hand">
                 <!-- Player cards will be added here -->
+                <div class="card" id="player-card-1">
+                    <div class="rank">A</div>
+                    <div class="suit">♦</div>
+                    <div class="suit-bottom">♦</div>
+                </div>
+                <div class="card" id="player-card-2">
+                    <div class="rank">A</div>
+                    <div class="suit">♣</div>
+                    <div class="suit-bottom">♣</div>
+                </div>
             </div>
-            <div class="action-buttons" id="action-buttons">
-                <button class="action-button fold" id="fold-btn">Fold</button>
-                <button class="action-button check" id="check-btn">Check</button>
-                <button class="action-button call" id="call-btn">Call</button>
-                <button class="action-button raise" id="raise-btn">Raise</button>
-            </div>
-            <div class="bet-slider-container" id="bet-slider-container">
-                <div class="bet-amount" id="bet-amount">Bet: $<span id="bet-value">10</span></div>
-                <input type="range" class="bet-slider" id="bet-slider" min="10" max="1000" step="10" value="10">
-                <button class="confirm-bet" id="confirm-bet-btn">Confirm Bet</button>
+            <div class="hand-name" id="player-hand-name">เอซคู่</div>
+            <div class="player-info">
+                <div class="current-bet">เดิมพันปัจจุบัน: <span id="player-bet">5</span> ชิป</div>
+                <div class="player-status" id="player-status">รอการเล่น...</div>
             </div>
         </div>
-    </div>
-    
-    <div class="bet-history-container">
-        <h3>Bet History</h3>
-        <div class="bet-history" id="bet-history">
-            <!-- Bet history will be displayed here -->
-        </div>
-    </div>
-    
-    <div class="controls">
-        <button id="new-game-btn">New Game</button>
-        <button id="back-to-menu-btn">Back to Menu</button>
-    </div>
-    
-    <div class="stats-panel">
-        <div class="stat-box">
-            <div>Total Games</div>
-            <div class="stat-value" id="total-games">0</div>
-        </div>
-        <div class="stat-box">
-            <div>Player Wins</div>
-            <div class="stat-value" id="player-wins">0</div>
-        </div>
-        <div class="stat-box">
-            <div>AI Wins</div>
-            <div class="stat-value" id="ai-wins">0</div>
-        </div>
-        <div class="stat-box">
-            <div>Win Rate</div>
-            <div class="stat-value" id="win-rate">0%</div>
-        </div>
-        <div class="stat-box">
-            <div>Biggest Pot</div>
-            <div class="stat-value" id="biggest-pot">$0</div>
-        </div>
-    </div>
-    
-    <div class="winner-overlay" id="winner-overlay">
-        <div class="winner-message">
-            <h2 id="winner-text">Player Wins!</h2>
-            <div id="hand-description" class="hand-description"></div>
-            <div class="winner-buttons">
-                <button id="play-again-btn">Play Again</button>
-                <button id="return-to-menu-btn">Return to Menu</button>
+
+        <div class="player" id="ai-player">
+            <div class="player-name">
+                <span>AI</span>
+                <span class="chip-count">1000 ชิป</span>
+            </div>
+            <div class="player-hand" id="ai-hand">
+                <!-- AI cards will be added here (face down initially) -->
+                <div class="card" id="ai-card-1" style="background-color: #9C2B2E;">
+                    <!-- Hidden until showdown -->
+                </div>
+                <div class="card" id="ai-card-2" style="background-color: #9C2B2E;">
+                    <!-- Hidden until showdown -->
+                </div>
+            </div>
+            <div class="hand-name" id="ai-hand-name">?</div>
+            <div class="player-info">
+                <div class="current-bet">เดิมพันปัจจุบัน: <span id="ai-bet">10</span> ชิป</div>
+                <div class="player-status" id="ai-status">รอการเล่น...</div>
             </div>
         </div>
     </div>
-    
-    <script src="/static/poker.js"></script>
+
+    <div class="action-buttons" id="action-buttons">
+        <button class="btn btn-check" id="btn-check" disabled>ตรวจสอบ</button>
+        <button class="btn btn-call" id="btn-call">เรียก</button>
+        <button class="btn btn-raise" id="btn-raise">เพิ่ม</button>
+        <button class="btn btn-fold" id="btn-fold">พับ</button>
+    </div>
+
+    <div class="bet-input" id="bet-input" style="display: none;">
+        <input type="number" id="raise-amount" min="20" max="1000" value="20">
+        <button class="btn btn-raise" id="btn-confirm-raise">ยืนยัน</button>
+        <button class="btn" id="btn-cancel-raise">ยกเลิก</button>
+    </div>
+
+    <div class="game-result" id="game-result" style="display: none;">
+        ผู้เล่นชนะด้วย เอซคู่!
+    </div>
+
+    <div class="bet-history">
+        <h3>ประวัติการเดิมพัน</h3>
+        <ul id="bet-history-list">
+            <li>ผู้เล่น วาง small blind 5 ชิป (pre_flop)</li>
+            <li>AI วาง big blind 10 ชิป (pre_flop)</li>
+        </ul>
+    </div>
+
+    <div class="game-log">
+        <h3>บันทึกเกม</h3>
+        <div id="game-log-content">
+            <p>Player posts small blind: 5</p>
+            <p>AI posts big blind: 10</p>
+        </div>
+    </div>
+
+    <div class="statistics">
+        <h3>สถิติ</h3>
+        <div class="statistics-grid">
+            <div class="statistic-item">
+                <span>เกมที่เล่นทั้งหมด:</span>
+                <span class="statistic-value" id="total-games">0</span>
+            </div>
+            <div class="statistic-item">
+                <span>ผู้เล่นชนะ:</span>
+                <span class="statistic-value" id="player-wins">0</span>
+            </div>
+            <div class="statistic-item">
+                <span>AI ชนะ:</span>
+                <span class="statistic-value" id="ai-wins">0</span>
+            </div>
+            <div class="statistic-item">
+                <span>อัตราการชนะ:</span>
+                <span class="statistic-value" id="win-rate">0%</span>
+            </div>
+            <div class="statistic-item">
+                <span>พ็อตที่ใหญ่ที่สุด:</span>
+                <span class="statistic-value" id="biggest-pot">0 ชิป</span>
+            </div>
+            <div class="statistic-item">
+                <span>มือที่ดีที่สุด:</span>
+                <span class="statistic-value" id="best-hand">-</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add audio elements for sound effects -->
+    <audio id="deal-sound" src="/static/sounds/Audio/deal.mp3"></audio>
+    <audio id="bet-sound" src="/static/sounds/Audio/bet.mp3"></audio>
+    <audio id="win-sound" src="/static/sounds/Audio/win.mp3"></audio>
+
+    <script>
+        // ฟังก์ชันสำหรับเชื่อมต่อกับ Python backend
+        // หมายเหตุ: นี่เป็นโค้ดตัวอย่างเท่านั้น จำเป็นต้องเชื่อมต่อกับ backend จริง
+        
+        // สัญลักษณ์สำหรับไพ่
+        const suitSymbols = {
+            'hearts': '♥',
+            'diamonds': '♦',
+            'clubs': '♣',
+            'spades': '♠'
+        };
+        
+        // คำอธิบายภาษาไทยสำหรับมือไพ่
+        const handDescriptionsThai = {
+            'high_card': 'ไพ่สูงสุด',
+            'pair': 'คู่',
+            'two_pair': 'สองคู่',
+            'three_of_a_kind': 'สามเหมือนกัน',
+            'straight': 'เรียงห้าตัว',
+            'flush': 'ไพ่ห้าตัวสีเดียวกัน',
+            'full_house': 'ฟูลเฮาส์',
+            'four_of_a_kind': 'สี่เหมือนกัน',
+            'straight_flush': 'เรียงห้าตัวสีเดียวกัน',
+            'royal_flush': 'รอยัลฟลัช'
+        };
+        
+        // สถานะเกม
+        let gameState = {
+            pot: 15,
+            currentBet: 10,
+            gameStage: 'pre_flop',
+            communityCards: [],
+            players: [
+                {
+                    name: 'Player',
+                    chips: 995,
+                    currentBet: 5,
+                    isFolded: false,
+                    isAllIn: false,
+                    hand: [
+                        { suit: 'diamonds', rank: 'A' },
+                        { suit: 'clubs', rank: 'A' }
+                    ],
+                    handName: 'pair'
+                },
+                {
+                    name: 'AI',
+                    chips: 990,
+                    currentBet: 10,
+                    isFolded: false,
+                    isAllIn: false,
+                    hand: [],
+                    handName: null
+                }
+            ],
+            currentPlayer: 'Player',
+            winner: null,
+            betHistory: [
+                { player: 'Player', action: 'small blind', amount: 5, stage: 'pre_flop' },
+                { player: 'AI', action: 'big blind', amount: 10, stage: 'pre_flop' }
+            ],
+            actionLog: [
+                'Player posts small blind: 5',
+                'AI posts big blind: 10'
+            ]
+        };
+        
+        // สถิติเกม
+        let gameStats = {
+            totalGames: 0,
+            playerWins: 0,
+            aiWins: 0,
+            winRate: 0,
+            biggestPot: 0,
+            bestHand: ''
+        };
+        
+        // อัปเดตหน้าเว็บตามสถานะเกม
+        function updateUI(gameState) {
+            // อัปเดตข้อมูลพื้นฐาน
+            document.getElementById('game-stage').textContent = gameState.gameStage.toUpperCase();
+            document.getElementById('pot-amount').textContent = gameState.pot;
+            
+            // อัปเดตข้อมูลผู้เล่น
+            const player = gameState.players[0];
+            document.querySelector('#player .chip-count').textContent = player.chips + ' ชิป';
+            document.getElementById('player-bet').textContent = player.currentBet;
+            document.getElementById('player-status').textContent = 
+                player.isFolded ? 'พับแล้ว' : 
+                player.isAllIn ? 'ออลอิน!' : 
+                'รอการเล่น...';
+            
+            if (player.handName) {
+                document.getElementById('player-hand-name').textContent = 
+                    handDescriptionsThai[player.handName] || player.handName;
+            }
+            
+            // อัปเดตข้อมูล AI
+            const ai = gameState.players[1];
+            document.querySelector('#ai-player .chip-count').textContent = ai.chips + ' ชิป';
+            document.getElementById('ai-bet').textContent = ai.currentBet;
+            document.getElementById('ai-status').textContent = 
+                ai.isFolded ? 'พับแล้ว' : 
+                ai.isAllIn ? 'ออลอิน!' : 
+                'รอการเล่น...';
+            
+            if (gameState.gameStage === 'showdown' && ai.handName) {
+                document.getElementById('ai-hand-name').textContent = 
+                    handDescriptionsThai[ai.handName] || ai.handName;
+            } else {
+                document.getElementById('ai-hand-name').textContent = '?';
+            }
+            
+            // อัปเดตไพ่ผู้เล่น
+            if (player.hand.length === 2) {
+                updateCardImage('player-card-1', player.hand[0]);
+                updateCardImage('player-card-2', player.hand[1]);
+            }
+            
+            // อัปเดตไพ่ AI ถ้าอยู่ในรอบ showdown หรือมีผู้ชนะแล้ว
+            if ((gameState.gameStage === 'showdown' || gameState.winner) && ai.hand.length === 2) {
+                updateCardImage('ai-card-1', ai.hand[0]);
+                updateCardImage('ai-card-2', ai.hand[1]);
+            } else {
+                // ซ่อนไพ่ AI
+                document.getElementById('ai-card-1').classList.add('hidden');
+                document.getElementById('ai-card-2').classList.add('hidden');
+            }
+            
+            // อัปเดตไพ่กลาง
+            updateCommunityCards(gameState.communityCards);
+            
+            // อัปเดตประวัติการเดิมพัน
+            updateBetHistory(gameState.betHistory);
+            
+            // อัปเดตบันทึกเกม
+            updateGameLog(gameState.actionLog);
+            
+            // อัปเดตปุ่มการกระทำ
+            updateActionButtons(gameState);
+            
+            // แสดงผลลัพธ์เกมถ้ามีผู้ชนะ
+            if (gameState.winner) {
+                const resultElement = document.getElementById('game-result');
+                resultElement.style.display = 'block';
+                
+                const winnerName = gameState.winner === 'player' ? 'ผู้เล่น' : 'AI';
+                const winningHand = gameState.winner === 'player' ? 
+                    player.handName : ai.handName;
+                
+                let handDescription = winningHand ? 
+                    (handDescriptionsThai[winningHand] || winningHand) : '';
+                
+                resultElement.textContent = `${winnerName}ชนะ${handDescription ? ' ด้วย ' + handDescription : ''}!`;
+            } else {
+                document.getElementById('game-result').style.display = 'none';
+            }
+            
+            // อัปเดตสถิติ
+            updateStatistics(gameStats);
+        }
+        
+        // Function to update card images based on game state
+        function updateCardImage(cardId, cardData) {
+            const cardElement = document.getElementById(cardId);
+            if (cardData) {
+                cardElement.src = `/static/svg_cards/${cardData.rank.toLowerCase()}_of_${cardData.suit}.svg`;
+                cardElement.alt = `${cardData.rank} of ${cardData.suit}`;
+                cardElement.classList.remove('hidden');
+            } else {
+                cardElement.classList.add('hidden');
+            }
+        }
+
+        // Update player and AI cards
+        function updatePlayerAndAICards() {
+            const player = gameState.players[0];
+            const ai = gameState.players[1];
+
+            if (player.hand.length === 2) {
+                updateCardImage('player-card-1', player.hand[0]);
+                updateCardImage('player-card-2', player.hand[1]);
+            }
+
+            if ((gameState.gameStage === 'showdown' || gameState.winner) && ai.hand.length === 2) {
+                updateCardImage('ai-card-1', ai.hand[0]);
+                updateCardImage('ai-card-2', ai.hand[1]);
+            } else {
+                document.getElementById('ai-card-1').classList.add('hidden');
+                document.getElementById('ai-card-2').classList.add('hidden');
+            }
+        }
+
+        // Update community cards
+        function updateCommunityCards(cards) {
+            for (let i = 0; i < 5; i++) {
+                const cardElement = document.getElementById(`community-card-${i+1}`);
+                if (i < cards.length) {
+                    updateCardImage(`community-card-${i+1}`, cards[i]);
+                } else {
+                    cardElement.classList.add('hidden');
+                }
+            }
+        }
+
+        // Play sound based on action
+        function playActionSound(action) {
+            switch(action) {
+                case 'deal':
+                    playSound('deal-sound');
+                    break;
+                case 'bet':
+                    playSound('bet-sound');
+                    break;
+                case 'win':
+                    playSound('win-sound');
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // อัปเดตประวัติการเดิมพัน
+        function updateBetHistory(betHistory) {
+            const historyList = document.getElementById('bet-history-list');
+            historyList.innerHTML = '';
+            
+            // แสดงรายการล่าสุด 5 รายการ
+            const recentHistory = betHistory.slice(-5);
+            
+            for (const bet of recentHistory) {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${bet.player} ${bet.action} ${bet.amount} ชิป (${bet.stage})`;
+                historyList.appendChild(listItem);
+            }
+        }
+        
+        // อัปเดตบันทึกเกม
+        function updateGameLog(actionLog) {
+            const logContent = document.getElementById('game-log-content');
+            logContent.innerHTML = '';
+            
+            for (const action of actionLog) {
+                const paragraph = document.createElement('p');
+                paragraph.textContent = action;
+                logContent.appendChild(paragraph);
+            }
+            
+            // เลื่อนไปที่ล่างสุด
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        // อัปเดตปุ่มการกระทำ
+        function updateActionButtons(gameState) {
+            const isPlayerTurn = gameState.currentPlayer === 'Player';
+            const player = gameState.players[0];
+            
+            document.getElementById('btn-check').disabled = 
+                !isPlayerTurn || player.isFolded || player.isAllIn || 
+                player.currentBet < gameState.currentBet || 
+                gameState.gameStage === 'showdown' || gameState.winner;
+            
+            document.getElementById('btn-call').disabled = 
+                !isPlayerTurn || player.isFolded || player.isAllIn || 
+                player.currentBet >= gameState.currentBet || 
+                gameState.gameStage === 'showdown' || gameState.winner;
+            
+            document.getElementById('btn-raise').disabled = 
+                !isPlayerTurn || player.isFolded || player.isAllIn || 
+                player.chips <= 0 || 
+                gameState.gameStage === 'showdown' || gameState.winner;
+            
+            document.getElementById('btn-fold').disabled = 
+                !isPlayerTurn || player.isFolded || player.isAllIn || 
+                gameState.gameStage === 'showdown' || gameState.winner;
+        }
+        
+        // อัปเดตสถิติ
+        function updateStatistics(stats) {
+            document.getElementById('total-games').textContent = stats.totalGames;
+            document.getElementById('player-wins').textContent = stats.playerWins;
+            document.getElementById('ai-wins').textContent = stats.aiWins;
+            document.getElementById('win-rate').textContent = `${stats.winRate}%`;
+            document.getElementById('biggest-pot').textContent = `${stats.biggestPot} ชิป`;
+            document.getElementById('best-hand').textContent = 
+                stats.bestHand ? (handDescriptionsThai[stats.bestHand] || stats.bestHand) : '-';
+        }
+        
+        // ตัวอย่างข้อมูลสำหรับทดสอบ UI
+        const testCommunityCards = [
+            { suit: 'hearts', rank: 'K' },
+            { suit: 'spades', rank: 'Q' },
+            { suit: 'diamonds', rank: '10' }
+        ];
+        
+        // ตัวอย่างสถิติเกม
+        const testStats = {
+            totalGames: 10,
+            playerWins: 6,
+            aiWins: 4,
+            winRate: 60,
+            biggestPot: 500,
+            bestHand: 'full_house'
+        };
+        
+        // Function to play sound effects
+        function playSound(soundId) {
+            const sound = document.getElementById(soundId);
+            if (sound) {
+                sound.play();
+            }
+        }
+
+        // Example: Play deal sound when the page loads
+        window.addEventListener('load', function() {
+            updateUI(gameState);
+            playActionSound('deal');
+        });
+
+        // Function to send player action to the backend
+        async function sendPlayerAction(action, amount = 0) {
+            try {
+                const response = await fetch('/api/player-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action, amount })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const gameState = await response.json();
+                updateUI(gameState);
+            } catch (error) {
+                console.error('Error sending player action:', error);
+            }
+        }
+
+        // Modify existing event listeners to play sounds
+        document.getElementById('btn-check').addEventListener('click', function() {
+            console.log('Player checks');
+            sendPlayerAction('check');
+            playActionSound('bet');
+        });
+
+        document.getElementById('btn-call').addEventListener('click', function() {
+            console.log('Player calls');
+            const callAmount = gameState.currentBet - gameState.players[0].currentBet;
+            sendPlayerAction('call', callAmount);
+            playActionSound('bet');
+        });
+
+        document.getElementById('btn-fold').addEventListener('click', function() {
+            console.log('Player folds');
+            sendPlayerAction('fold');
+            playActionSound('win');
+        });
+        
+    </script>
 </body>
-</html>
+</html> 

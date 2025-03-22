@@ -1,7 +1,7 @@
 import json
 import os
 import random
-import numpy np
+import numpy as np
 from collections import Counter
 
 class Card:
@@ -290,6 +290,10 @@ class PokerGame:
         self.game_stage = "pre_flop"  # pre_flop, flop, turn, river, showdown
         self.winner = None
         self.stats = self.load_stats()
+        # เพิ่มการบันทึกประวัติการเดิมพัน
+        self.bet_history = []
+        # เพิ่มบันทึกการกระทำในเกม
+        self.action_log = []
     
     def load_stats(self):
         """Load game statistics from file"""
@@ -374,6 +378,9 @@ class PokerGame:
         self.current_bet = 0
         self.game_stage = "pre_flop"
         self.winner = None
+        # ล้างประวัติการเดิมพันและบันทึกการกระทำ
+        self.bet_history = []
+        self.action_log = []
     
     def setup_new_game(self, player_chips=1000, ai_chips=1000):
         """Set up a new game with players"""
@@ -393,6 +400,24 @@ class PokerGame:
         self.players[1].bet(self.big_blind)    # AI posts big blind
         self.current_bet = self.big_blind
         self.pot = self.small_blind + self.big_blind
+        
+        # บันทึกการเดิมพัน blinds
+        self.bet_history.append({
+            'player': "Player",
+            'action': "small blind",
+            'amount': self.small_blind,
+            'stage': "pre_flop"
+        })
+        self.bet_history.append({
+            'player': "AI",
+            'action': "big blind",
+            'amount': self.big_blind,
+            'stage': "pre_flop"
+        })
+        
+        # บันทึกการกระทำ
+        self.action_log.append(f"Player posts small blind: {self.small_blind}")
+        self.action_log.append(f"AI posts big blind: {self.big_blind}")
         
         # Player acts first pre-flop
         self.current_player_idx = 0
@@ -430,30 +455,56 @@ class PokerGame:
                 'four_of_a_kind': 'Four of a Kind',
                 'straight_flush': 'Straight Flush',
                 'royal_flush': 'Royal Flush'
-            }
+            },
+            # เพิ่มประวัติการเดิมพัน
+            'bet_history': self.bet_history,
+            # เพิ่มบันทึกการกระทำ
+            'action_log': self.action_log
         }
         return state
     
     def next_stage(self):
         """Move to the next stage of the game"""
+        stage_names = {
+            "pre_flop": "Flop",
+            "flop": "Turn",
+            "turn": "River",
+            "river": "Showdown"
+        }
+        
         if self.game_stage == "pre_flop":
             self.game_stage = "flop"
             # Deal flop (3 cards)
+            flop_cards = []
             for _ in range(3):
-                self.community_cards.append(self.deck.deal())
+                card = self.deck.deal()
+                flop_cards.append(card)
+                self.community_cards.append(card)
+            
+            # บันทึกการแจกไพ่ flop
+            self.action_log.append(f"Dealing Flop: {', '.join(str(card) for card in flop_cards)}")
         
         elif self.game_stage == "flop":
             self.game_stage = "turn"
             # Deal turn (1 card)
-            self.community_cards.append(self.deck.deal())
+            turn_card = self.deck.deal()
+            self.community_cards.append(turn_card)
+            
+            # บันทึกการแจกไพ่ turn
+            self.action_log.append(f"Dealing Turn: {turn_card}")
         
         elif self.game_stage == "turn":
             self.game_stage = "river"
             # Deal river (1 card)
-            self.community_cards.append(self.deck.deal())
+            river_card = self.deck.deal()
+            self.community_cards.append(river_card)
+            
+            # บันทึกการแจกไพ่ river
+            self.action_log.append(f"Dealing River: {river_card}")
         
         elif self.game_stage == "river":
             self.game_stage = "showdown"
+            self.action_log.append("Showdown")
             self.determine_winner()
         
         # Reset betting round
@@ -462,6 +513,10 @@ class PokerGame:
         for player in self.players:
             if not player.is_folded and not player.is_all_in:
                 player.current_bet = 0
+        
+        # บันทึกการเปลี่ยน stage
+        if self.game_stage != "showdown":
+            self.action_log.append(f"Starting {stage_names.get(self.game_stage, self.game_stage)} betting round")
     
     def determine_winner(self):
         """Determine the winner at showdown"""
@@ -475,6 +530,9 @@ class PokerGame:
             # Save best hand
             hand_name, _ = active_players[0].hand.get_hand_rank(self.community_cards)
             active_players[0].hand_name = hand_name  # Store the hand name
+            
+            # บันทึกผลลัพธ์
+            self.action_log.append(f"{active_players[0].name} wins {self.pot} chips with {hand_name}")
             self.update_stats("default", self.winner, self.pot, hand_name)
             
             return
@@ -486,6 +544,9 @@ class PokerGame:
         for player in active_players:
             hand_name, _ = player.hand.get_hand_rank(self.community_cards)
             player.hand_name = hand_name  # Store the hand name for each player
+            
+            # บันทึกมือของผู้เล่น
+            self.action_log.append(f"{player.name} shows {player.hand.cards[0]} and {player.hand.cards[1]} - {hand_name}")
             
             if best_player is None:
                 best_player = player
@@ -501,9 +562,13 @@ class PokerGame:
         if best_player:
             self.winner = best_player.name.lower()
             best_player.chips += self.pot
+            
+            # บันทึกผู้ชนะ
+            self.action_log.append(f"{best_player.name} wins {self.pot} chips with {best_hand_name}")
         else:
             # No winner (shouldn't happen)
             self.winner = "draw"
+            self.action_log.append(f"Game ended in a draw!")
         
         # Update stats
         self.update_stats("default", self.winner, self.pot, best_hand_name)
@@ -514,14 +579,26 @@ class PokerGame:
             return False
         
         current_player = self.players[self.current_player_idx]
+        player_name = current_player.name
+        
+        # สร้างข้อมูลสำหรับบันทึกประวัติการเดิมพัน
+        action_record = {
+            'player': player_name,
+            'action': action,
+            'amount': 0,
+            'stage': self.game_stage
+        }
         
         if action == "fold":
             current_player.fold()
+            self.action_log.append(f"{player_name} folds")
+            
             # Check if only one player left
             active_players = [p for p in self.players if not p.is_folded]
             if len(active_players) == 1:
                 self.winner = active_players[0].name.lower()
                 active_players[0].chips += self.pot
+                self.action_log.append(f"{active_players[0].name} wins {self.pot} chips (opponent folded)")
                 self.update_stats("default", self.winner, self.pot)
                 return True
         
@@ -529,22 +606,36 @@ class PokerGame:
             amount_to_call = self.current_bet - current_player.current_bet
             amount_called = current_player.bet(amount_to_call)
             self.pot += amount_called
+            
+            # อัปเดตข้อมูลการเดิมพัน
+            action_record['amount'] = amount_called
+            self.action_log.append(f"{player_name} calls {amount_called}")
         
         elif action == "raise" or action == "bet":
             # Minimum raise is double the current bet
-            min_raise = self.current_bet * 2
+            min_raise = max(self.current_bet * 2, self.big_blind)
             bet_amount = max(min_raise, bet_amount)
             
             amount_to_raise = bet_amount - current_player.current_bet
             amount_raised = current_player.bet(amount_to_raise)
             self.pot += amount_raised
             self.current_bet = current_player.current_bet
+            
+            # อัปเดตข้อมูลการเดิมพัน
+            action_record['amount'] = amount_raised
+            action_name = "raises" if self.current_bet > 0 else "bets"
+            self.action_log.append(f"{player_name} {action_name} {amount_raised}")
         
         elif action == "check":
             # Check is only valid if no bet has been made
             if current_player.current_bet < self.current_bet:
                 return False
             # No action needed for check
+            self.action_log.append(f"{player_name} checks")
+        
+        # เพิ่มข้อมูลการเดิมพันเข้าไปในประวัติ
+        if action != "check":  # ไม่บันทึกการ check เนื่องจากไม่มีการเดิมพัน
+            self.bet_history.append(action_record)
         
         # Switch to next player
         self.next_player()
@@ -844,33 +935,151 @@ class PokerGame:
         # Cap strength
         return min(max(strength, 0), 1)
 
-# Test the Poker game
+# สร้างฟังก์ชันเพื่อแสดงเกมในรูปแบบกราฟิก
+def display_game(game_state):
+    """แสดงเกมในรูปแบบข้อความ"""
+    print("\n" + "="*50)
+    print(f"Stage: {game_state['game_stage'].upper()}")
+    print(f"Pot: {game_state['pot']} chips")
+    print("="*50)
+    
+    # แสดงไพ่กลาง
+    print("\nCommunity Cards:")
+    if game_state['community_cards']:
+        cards = []
+        for card_dict in game_state['community_cards']:
+            cards.append(f"{card_dict['rank']} of {card_dict['suit']}")
+        print(", ".join(cards))
+    else:
+        print("No community cards yet")
+    
+    # แสดงข้อมูลผู้เล่น
+    for player in game_state['players']:
+        print("\n" + "-"*30)
+        print(f"{player['name']}: {player['chips']} chips")
+        
+        if player['is_folded']:
+            print("Status: Folded")
+        elif player['is_all_in']:
+            print("Status: All-in")
+        else:
+            print(f"Current bet: {player['current_bet']}")
+        
+        # แสดงไพ่ของผู้เล่น
+        if player['hand']:
+            cards = []
+            for card_dict in player['hand']:
+                cards.append(f"{card_dict['rank']} of {card_dict['suit']}")
+            print(f"Cards: {', '.join(cards)}")
+            
+            if player['hand_name']:
+                print(f"Hand: {game_state['hand_descriptions'][player['hand_name']]}")
+    
+    # แสดงประวัติการเดิมพัน
+    print("\n" + "-"*30)
+    print("Bet History:")
+    for bet in game_state['bet_history'][-5:]:  # แสดง 5 รายการล่าสุด
+        print(f"{bet['player']} {bet['action']} {bet['amount']} chips ({bet['stage']})")
+    
+    # แสดงสถานะการเล่น
+    print("\n" + "-"*30)
+    if game_state['winner']:
+        winner_name = game_state['winner'].capitalize()
+        print(f"Winner: {winner_name}")
+    else:
+        print(f"Current player: {game_state['current_player']}")
+        print("Valid actions:", ", ".join(game.get_valid_actions()))
+    
+    print("="*50)
+
+# ปรับปรุงส่วนทดสอบเกม
 if __name__ == "__main__":
     game = PokerGame()
     game.setup_new_game()
     
-    # Display initial state
-    print("Initial game state:")
-    print(f"Pot: {game.pot}")
-    print(f"Player hand: {game.players[0].hand.cards}")
-    print(f"AI hand: {game.players[1].hand.cards}")
+    # ทดสอบการเล่นเกม
+    playing = True
+    ai_mode = 1  # เริ่มต้นด้วย AI ระดับกลาง
     
-    # Simulate player calling
-    print("\nPlayer calls...")
-    game.player_action("call")
+    print("Welcome to Texas Hold'em Poker!")
+    print("Select AI difficulty level:")
+    print("0: Easy (Simple AI)")
+    print("1: Medium (Probability-based AI)")
+    print("2: Hard (Advanced AI with bluffing)")
     
-    # Simulate AI checking
-    print("AI checks...")
-    game.ai_move_simple(game.get_valid_actions())
+    ai_choice = input("Enter AI level (0-2, default 1): ")
+    if ai_choice in ["0", "1", "2"]:
+        ai_mode = int(ai_choice)
     
-    # Deal flop
-    print("\nDealing flop...")
-    game.next_stage()
-    print(f"Community cards: {game.community_cards}")
+    print(f"\nPlaying against AI level {ai_mode}")
+    print("Starting game...\n")
     
-    # Evaluate hands
-    print("\nHand evaluations:")
-    player_rank = game.players[0].hand.get_hand_rank(game.community_cards)
-    ai_rank = game.players[1].hand.get_hand_rank(game.community_cards)
-    print(f"Player hand: {player_rank[0]}")
-    print(f"AI hand: {ai_rank[0]}")
+    while playing:
+        # แสดงสถานะเกม
+        state = game.get_game_state(show_ai_cards=False)
+        display_game(state)
+        
+        # ถ้ามีผู้ชนะแล้ว ให้เริ่มเกมใหม่หรือจบเกม
+        if game.winner:
+            choice = input("\nPlay again? (y/n): ")
+            if choice.lower() != 'y':
+                playing = False
+                print("Thanks for playing!")
+                break
+            
+            # เริ่มเกมใหม่โดยเก็บชิปต่อ
+            player_chips = game.players[0].chips
+            ai_chips = game.players[1].chips
+            game.setup_new_game(player_chips, ai_chips)
+            continue
+        
+        # ถ้าถึงตาผู้เล่น
+        if game.current_player_idx == 0:
+            valid_actions = game.get_valid_actions()
+            
+            # แสดงตัวเลือกการเล่น
+            action_prompt = f"\nYour turn. Choose action ({', '.join(valid_actions)}): "
+            action = input(action_prompt).lower()
+            
+            # ตรวจสอบว่าการกระทำถูกต้อง
+            if action not in valid_actions:
+                print(f"Invalid action. Please choose from: {', '.join(valid_actions)}")
+                continue
+            
+            # รับจำนวนเงินเดิมพันถ้าเลือก raise
+            bet_amount = 0
+            if action == "raise":
+                min_bet = max(game.current_bet * 2, game.big_blind)
+                max_bet = game.players[0].chips + game.players[0].current_bet
+                bet_prompt = f"Enter bet amount ({min_bet}-{max_bet}): "
+                
+                try:
+                    bet_amount = int(input(bet_prompt))
+                    if bet_amount < min_bet or bet_amount > max_bet:
+                        print(f"Invalid bet amount. Must be between {min_bet} and {max_bet}")
+                        continue
+                except ValueError:
+                    print("Please enter a valid number")
+                    continue
+            
+            # ดำเนินการตามที่ผู้เล่นเลือก
+            game.player_action(action, bet_amount)
+        
+        # ถ้าถึงตา AI
+        else:
+            print("\nAI is thinking...")
+            import time
+            time.sleep(1)  # ทำให้เหมือนกำลังคิด
+            
+            # AI ตัดสินใจ
+            game.ai_move(ai_mode)
+    
+    print("\nFinal Statistics:")
+    print(f"Games played: {game.stats['total_games']}")
+    print(f"Player wins: {game.stats['player_wins']}")
+    print(f"AI wins: {game.stats['ai_wins']}")
+    print(f"Player win rate: {game.stats['win_rate']}%")
+    print(f"Biggest pot: {game.stats['biggest_pot']} chips")
+    if game.stats['best_hand']:
+        best_hand = game.stats['best_hand']
+        print(f"Best hand achieved: {state['hand_descriptions'].get(best_hand, best_hand)}")

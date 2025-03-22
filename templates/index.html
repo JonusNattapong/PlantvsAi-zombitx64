@@ -3,52 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Board Games</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <title>เกม Zombitx64</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            color: #ff5722;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 20px;
+            color: #aaaaaa;
+            margin-bottom: 30px;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        
+        .game-card {
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-image {
+            width: 100%;
+            height: 180px;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .poker-image {
+            background-image: url('https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
+        }
+        
+        .tictactoe-image {
+            background-image: url('https://images.unsplash.com/photo-1611996575749-79a3a250f948?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
+        }
+        
+        .chess-image {
+            background-image: url('https://images.unsplash.com/photo-1560174038-da43ac74f01b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
+        }
+        
+        .checkers-image {
+            background-image: url('https://images.unsplash.com/photo-1610570111131-17faca56a8fc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');
+        }
+        
+        .game-info {
+            padding: 20px;
+        }
+        
+        .game-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #ff5722;
+        }
+        
+        .game-description {
+            color: #aaaaaa;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .game-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ff5722;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .game-btn:hover {
+            background-color: #e64a19;
+        }
+        
+        footer {
+            margin-top: 50px;
+            text-align: center;
+            padding: 20px;
+            color: #777777;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>AI Board Games</h1>
-    <div class="game-grid">
-        <div class="game-card">
-            <img src="/static/images/tictactoe.jpg" alt="Tic Tac Toe" class="game-image">
-            <div class="game-info">
-                <h2 class="game-title">Tic Tac Toe</h2>
-                <p class="game-description">Play the classic Tic Tac Toe game against an AI.</p>
-                <a href="/tictactoe" class="play-button">Play</a>
+    <div class="container">
+        <header>
+            <h1>เกม Zombitx64</h1>
+            <div class="subtitle">เพลิดเพลินกับคอลเลคชั่นเกมคลาสสิคต่างๆ</div>
+        </header>
+        
+        <div class="games-grid">
+            <div class="game-card">
+                <div class="game-image poker-image"></div>
+                <div class="game-info">
+                    <h2 class="game-title">Texas Hold'em Poker</h2>
+                    <p class="game-description">เล่นโป๊กเกอร์แบบ Texas Hold'em กับ AI สามระดับความยาก จัดการชิป วางกลยุทธ์ และเอาชนะคู่ต่อสู้!</p>
+                    <a href="/poker" class="game-btn">เล่นเลย</a>
+                </div>
+            </div>
+            
+            <div class="game-card">
+                <div class="game-image tictactoe-image"></div>
+                <div class="game-info">
+                    <h2 class="game-title">Tic Tac Toe</h2>
+                    <p class="game-description">เกม X-O คลาสสิกที่เล่นง่ายแต่ท้าทาย แข่งขันกับ AI ที่ฉลาดและเก็บสถิติการเล่นของคุณ</p>
+                    <a href="/tictactoe" class="game-btn">เล่นเลย</a>
+                </div>
+            </div>
+            
+            <div class="game-card">
+                <div class="game-image chess-image"></div>
+                <div class="game-info">
+                    <h2 class="game-title">Chess</h2>
+                    <p class="game-description">เกมหมากรุกสากลที่ท้าทายความคิด วางแผนกลยุทธ์และเอาชนะ AI ที่มีระดับความยากหลากหลาย</p>
+                    <a href="/chess" class="game-btn">เล่นเลย</a>
+                </div>
+            </div>
+            
+            <div class="game-card">
+                <div class="game-image checkers-image"></div>
+                <div class="game-info">
+                    <h2 class="game-title">Checkers</h2>
+                    <p class="game-description">เกมหมากฮอสคลาสสิก ทดสอบทักษะการวางแผนของคุณกับ AI ที่ชาญฉลาด</p>
+                    <a href="/checkers" class="game-btn">เล่นเลย</a>
+                </div>
             </div>
         </div>
-        <div class="game-card">
-            <img src="/static/images/connect_four.jpg" alt="Connect Four" class="game-image">
-            <div class="game-info">
-                <h2 class="game-title">Connect Four</h2>
-                <p class="game-description">Challenge the AI in Connect Four.</p>
-                <a href="/connect_four" class="play-button">Play</a>
-            </div>
-        </div>
-        <div class="game-card">
-            <img src="/static/images/checkers.jpg" alt="Checkers" class="game-image">
-            <div class="game-info">
-                <h2 class="game-title">Checkers</h2>
-                <p class="game-description">Play Checkers against an AI opponent.</p>
-                <a href="/checkers" class="play-button">Play</a>
-            </div>
-        </div>
-        <div class="game-card">
-            <img src="/static/images/chess.jpg" alt="Chess" class="game-image">
-            <div class="game-info">
-                <h2 class="game-title">Chess</h2>
-                <p class="game-description">Test your skills in Chess against an AI.</p>
-                <a href="/chess" class="play-button">Play</a>
-            </div>
-        </div>
-        <div class="game-card">
-            <img src="/static/images/poker.jpg" alt="Poker" class="game-image">
-            <div class="game-info">
-                <h2 class="game-title">Poker</h2>
-                <p class="game-description">Play Poker against an AI.</p>
-                <a href="/poker" class="play-button">Play</a>
-            </div>
-        </div>
+        
+        <footer>
+            <p>&copy; 2023 Zombitx64 Games. พัฒนาด้วย Flask และ JavaScript.</p>
+        </footer>
     </div>
 </body>
 </html>

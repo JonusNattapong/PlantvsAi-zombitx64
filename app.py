@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session
 import random
 import json
 import os
@@ -11,9 +11,23 @@ from game.connect_four import ConnectFour
 from game.checkers import Checkers
 from game.tictactoe import TicTacToe
 from game.chess import Chess
-from game.poker import PokerGame
+from game.poker import PokerGame, Card, Deck, PokerHand, PokerPlayer
+import uuid
+import sys
+
+# Add the DatasetPokerzombitx64 directory to the Python path
+sys.path.append('DatasetPokerzombitx64')
+
+# Import the ZomPokerX64 model
+try:
+    from DatasetPokerzombitx64.poker_ml.models.zompokerx64 import ZomPokerX64
+    ML_MODEL_AVAILABLE = True
+except ImportError:
+    ML_MODEL_AVAILABLE = False
+    print("Warning: ZomPokerX64 model not available. Using fallback AI.")
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
 # Game state will be stored on the server side
 game_states = {}
@@ -36,8 +50,18 @@ tictactoe_games = {}  # Store Tic Tac Toe game instances
 connect_four_games = {}  # Store Connect Four game instances
 checkers_games = {}  # Store Checkers game instances
 
-# เก็บข้อมูลเกมตาม session
-game_sessions = {}
+# Dictionary เก็บเกมของผู้เล่น
+games = {}
+
+# Initialize the AI model if available
+ai_model = None
+if ML_MODEL_AVAILABLE:
+    try:
+        ai_model = ZomPokerX64(name="PokerAI", models_dir="DatasetPokerzombitx64/poker_ml/models")
+        print("ZomPokerX64 AI model initialized successfully!")
+    except Exception as e:
+        print(f"Error initializing ZomPokerX64 model: {e}")
+        ML_MODEL_AVAILABLE = False
 
 # Load pattern data
 def load_pattern_data():
@@ -109,6 +133,7 @@ def record_move(session_id, row, col, is_player):
 # Routes
 @app.route('/')
 def index():
+    """หน้าหลักของเว็บไซต์"""
     return render_template('index.html')
 
 @app.route('/tictactoe')
@@ -125,6 +150,15 @@ def connect_four():
 def checkers():
     ai = request.args.get('ai', '0')
     return render_template('checkers.html', ai_mode=ai)
+
+@app.route('/poker')
+def poker():
+    """หน้าเกม Poker"""
+    # สร้าง session ID ถ้ายังไม่มี
+    if 'game_id' not in session:
+        session['game_id'] = str(random.randint(10000, 99999))
+    
+    return render_template('poker.html')
 
 @app.route('/api/new_game', methods=['POST'])
 def new_game():
@@ -700,92 +734,419 @@ def get_game_types():
         "ai_modes": AI_MODES
     })
 
-@app.route('/api/poker_action', methods=['POST'])
-def poker_action():
+@app.route('/api/poker/start', methods=['POST'])
+def start_game():
+    """เริ่มเกมใหม่"""
+    game_id = session.get('game_id')
+    if not game_id:
+        return jsonify({'error': 'Session not found'}), 400
+    
+    # รับข้อมูล AI level จาก request
+    data = request.get_json()
+    ai_level = data.get('ai_level', 1)
+    
+    # สร้างเกมใหม่
+    game = PokerGame()
+    game.setup_new_game()
+    games[game_id] = game
+    
+    # ส่งข้อมูลเริ่มต้นกลับไปยังผู้เล่น
+    return jsonify(get_game_state(game_id))
+
+@app.route('/api/poker/state', methods=['GET'])
+def get_game_state_route():
+    """รับข้อมูลสถานะเกมปัจจุบัน"""
+    game_id = session.get('game_id')
+    if not game_id or game_id not in games:
+        return jsonify({'error': 'Game not found'}), 404
+    
+    return jsonify(get_game_state(game_id))
+
+@app.route('/api/player-action', methods=['POST'])
+def player_action():
     data = request.json
-    session_id = data.get('session_id')
+    session_id = data.get('sessionId', session.get('session_id'))
     action = data.get('action')
-    bet_amount = data.get('bet_amount', 0)
+    amount = data.get('amount', 0)
     
-    if session_id not in game_sessions:
-        return jsonify({'error': 'Invalid session ID'})
+    if session_id not in games:
+        return jsonify({'error': 'Game not found'}), 404
     
-    game = game_sessions[session_id]
+    game = games[session_id]
     
-    # ตรวจสอบว่าเป็นเกม Poker หรือไม่
-    if not isinstance(game, PokerGame):
-        return jsonify({'error': 'Invalid game type'})
+    # Process player action
+    if action == 'fold':
+        game.players[0].fold()
+    elif action == 'check':
+        game.players[0].check()
+    elif action == 'call':
+        game.players[0].call(amount)
+    elif action == 'raise':
+        game.players[0].raise_bet(amount)
     
-    # ดำเนินการตามแอคชั่นของผู้เล่น (fold, call, check, raise)
-    game.player_action(action, bet_amount)
+    # Check if it's AI's turn
+    if game.current_player == 1 and not game.is_round_over():
+        # Get the current game state
+        current_game_state = get_game_state(session_id)
+        
+        # Use the ML model for AI decision
+        ai_action = make_ai_decision(current_game_state)
+        
+        # Process AI action
+        if ai_action == 'fold':
+            game.players[1].fold()
+        elif ai_action == 'check':
+            game.players[1].check()
+        elif ai_action == 'call':
+            game.players[1].call(game.current_bet - game.players[1].current_bet)
+        elif ai_action == 'raise':
+            # For raise, we can use a simple rule to determine the amount
+            min_raise = max(game.current_bet * 2, 20)
+            max_raise = min(game.players[1].chips, min_raise * 3)
+            raise_amount = random.randint(min_raise, max_raise)
+            game.players[1].raise_bet(raise_amount)
     
-    # Return current game state
-    return jsonify({
-        'pot': game.pot,
-        'current_bet': game.current_bet,
-        'game_stage': game.game_stage,
-        'community_cards': [card.to_dict() for card in game.community_cards],
+    # Move to next stage if round is over
+    if game.is_round_over():
+        game.next_stage()
+    
+    return jsonify(get_game_state(session_id))
+
+@app.route('/api/poker/new_hand', methods=['POST'])
+def new_hand():
+    """เริ่มเกมใหม่โดยใช้ชิปที่เหลืออยู่"""
+    game_id = session.get('game_id')
+    if not game_id or game_id not in games:
+        return jsonify({'error': 'Game not found'}), 404
+    
+    game = games[game_id]
+    
+    # เก็บชิปปัจจุบันของผู้เล่น
+    player_chips = game.players[0].chips
+    ai_chips = game.players[1].chips
+    
+    # ถ้าผู้เล่นฝ่ายใดฝ่ายหนึ่งหมดชิป ให้เริ่มใหม่ด้วย 1000 ชิป
+    if player_chips <= 0 or ai_chips <= 0:
+        player_chips = 1000
+        ai_chips = 1000
+    
+    # เริ่มเกมใหม่
+    game.setup_new_game(player_chips, ai_chips)
+    
+    return jsonify(get_game_state(game_id))
+
+@app.route('/api/poker/stats', methods=['GET'])
+def get_stats():
+    """รับข้อมูลสถิติเกม"""
+    game_id = session.get('game_id')
+    if not game_id or game_id not in games:
+        return jsonify({'error': 'Game not found'}), 404
+    
+    game = games[game_id]
+    return jsonify(game.stats)
+
+def get_game_state(game_id):
+    """แปลงข้อมูลสถานะเกมให้อยู่ในรูปแบบที่ส่งกลับไปยัง client ได้"""
+    if game_id not in games:
+        return {'error': 'Game not found'}
+    
+    game = games[game_id]
+    state = game.get_game_state(show_ai_cards=game.winner is not None or game.game_stage == 'showdown')
+    
+    # แปลงข้อมูลไพ่ให้อยู่ในรูปแบบที่ JavaScript เข้าใจได้
+    formatted_state = {
+        'pot': state['pot'],
+        'currentBet': state['current_bet'],
+        'gameStage': state['game_stage'],
+        'communityCards': [card for card in state['community_cards']],
         'players': [
             {
-                'name': player.name,
-                'chips': player.chips,
-                'current_bet': player.current_bet,
-                'is_folded': player.is_folded,
-                'is_all_in': player.is_all_in,
-                'hand': player.hand.to_dict() if player.name == 'Player' else []
+                'name': player['name'],
+                'chips': player['chips'],
+                'currentBet': player['current_bet'],
+                'isFolded': player['is_folded'],
+                'isAllIn': player['is_all_in'],
+                'hand': player['hand'],
+                'handName': player['hand_name'],
             }
-            for player in game.players
+            for player in state['players']
         ],
-        'current_player': game.players[game.current_player_idx].name if game.current_player_idx < len(game.players) else None,
-        'winner': game.winner
-    })
-
-@app.route('/api/get_stats', methods=['GET'])
-def get_stats():
-    game_type = request.args.get('game_type', 'TicTacToe')
+        'currentPlayer': state['current_player'],
+        'winner': state['winner'],
+        'handDescriptions': state['hand_descriptions'],
+        'betHistory': state['bet_history'],
+        'actionLog': state['action_log']
+    }
     
-    # ดึงสถิติตามประเภทเกม
-    if game_type == 'TicTacToe':
-        # สร้างเกม TicTacToe เพื่อเข้าถึงสถิติ
-        temp_game = TicTacToe()
-        stats = temp_game.stats
-    elif game_type == 'ConnectFour':
-        temp_game = ConnectFour()
-        stats = temp_game.stats
-    elif game_type == 'Checkers':
-        temp_game = Checkers()
-        stats = temp_game.stats
-    elif game_type == 'Chess':
-        temp_game = Chess()
-        stats = temp_game.stats
-    elif game_type == 'Poker':
-        temp_game = PokerGame()
-        stats = temp_game.stats
+    return formatted_state
+
+def make_ai_decision(game_state):
+    """
+    Make AI decision using the ML model if available, otherwise use a simple rule-based approach
+    """
+    if ML_MODEL_AVAILABLE and ai_model:
+        try:
+            # Convert game_state to the format expected by the model
+            model_state = {
+                # Hand information
+                'hand': game_state['players'][1]['hand'],
+                'community_cards': game_state['communityCards'],
+                
+                # Game state information
+                'pot_size': game_state['pot'],
+                'bet_to_call': game_state['currentBet'] - game_state['players'][1]['currentBet'],
+                'stack_size': game_state['players'][1]['chips'],
+                'position': 'BTN' if game_state['currentPlayer'] == 'AI' else 'BB',
+                'street': _convert_game_stage(game_state['gameStage']),
+                
+                # Additional information
+                'available_actions': _get_available_actions(game_state),
+                'current_bet': game_state['currentBet'],
+                'player_bet': game_state['players'][1]['currentBet'],
+                'opponent_chips': game_state['players'][0]['chips'],
+                'opponent_bet': game_state['players'][0]['currentBet'],
+                'is_all_in': game_state['players'][1]['isAllIn'],
+                'is_folded': game_state['players'][1]['isFolded']
+            }
+            
+            # Get action from the model
+            action = ai_model.predict_action(model_state)
+            print(f"AI model decided: {action}")
+            return action
+        except Exception as e:
+            print(f"Error using ML model for AI decision: {e}")
+            # Fall back to simple AI if there's an error
+            return simple_ai_decision(game_state)
     else:
-        return jsonify({'error': 'Invalid game type'})
-    
-    return jsonify(stats)
+        # Use simple rule-based AI
+        return simple_ai_decision(game_state)
 
-@app.route('/api/change_ai_mode', methods=['POST'])
-def change_ai_mode():
-    data = request.json
-    session_id = data.get('session_id')
-    ai_mode = data.get('ai_mode', 0)
+def _convert_game_stage(game_stage):
+    """
+    Convert game stage from our format to the format expected by the model
+    """
+    stage_mapping = {
+        'pre_flop': 'preflop',
+        'flop': 'flop',
+        'turn': 'turn',
+        'river': 'river',
+        'showdown': 'river'  # Treat showdown as river for decision making
+    }
+    return stage_mapping.get(game_stage, 'preflop')
+
+def _get_available_actions(game_state):
+    """
+    Determine available actions based on game state
+    """
+    available_actions = ['fold']
     
-    if session_id not in game_sessions:
-        return jsonify({'error': 'Invalid session ID'})
+    # If player can check (current bet equals player's bet)
+    if game_state['currentBet'] <= game_state['players'][1]['currentBet']:
+        available_actions.append('check')
+    else:
+        available_actions.append('call')
     
-    game = game_sessions[session_id]
+    # Can always raise unless AI is all-in or has less chips than the minimum raise
+    if not game_state['players'][1]['isAllIn'] and game_state['players'][1]['chips'] > 0:
+        available_actions.append('raise')
     
-    # อัปเดต AI mode
-    # เนื่องจากแต่ละเกมอาจมีการเก็บ AI mode ต่างกัน เราจะต้องตรวจสอบประเภทเกม
-    if hasattr(game, 'ai_mode'):
-        game.ai_mode = ai_mode
+    return available_actions
+
+def simple_ai_decision(game_state):
+    """
+    Simple rule-based AI decision making as a fallback.
+    This function uses basic poker strategy rules based on:
+    1. Hand strength
+    2. Position
+    3. Pot odds
+    4. Game stage
+    """
+    ai_player = game_state['players'][1]
+    player = game_state['players'][0]
     
-    return jsonify({
-        'ai_mode': ai_mode,
-        'ai_name': AI_MODES[ai_mode] if 0 <= ai_mode < len(AI_MODES) else "Unknown"
-    })
+    # Extract relevant information
+    hand = ai_player['hand']
+    community_cards = game_state['communityCards']
+    pot = game_state['pot']
+    current_bet = game_state['currentBet']
+    ai_chips = ai_player['chips']
+    player_chips = player['chips']
+    game_stage = game_state['gameStage']
+    current_player = game_state['currentPlayer']
+    
+    # Calculate how much AI needs to call
+    call_amount = current_bet - ai_player['currentBet']
+    
+    # If AI is all-in or folded, no decision needed
+    if ai_player['isAllIn'] or ai_player['isFolded']:
+        return 'check'
+        
+    # Calculate basic hand strength (0-10 scale)
+    hand_strength = calculate_hand_strength(hand, community_cards, game_stage)
+    
+    # Pre-flop strategy
+    if game_stage == 'pre_flop':
+        # Strong starting hand
+        if hand_strength >= 7:
+            if random.random() < 0.7:  # 70% chance to raise with strong hand
+                return 'raise'
+            else:
+                return 'call'
+        # Medium strength hand
+        elif hand_strength >= 4:
+            if call_amount <= ai_chips * 0.1:  # Call if less than 10% of stack
+                return 'call'
+            else:
+                return 'fold'
+        # Weak hand
+        else:
+            if call_amount == 0:  # Free to see flop
+                return 'check'
+            elif call_amount <= ai_chips * 0.05:  # Small bet, might call occasionally
+                return 'call' if random.random() < 0.3 else 'fold'
+            else:
+                return 'fold'
+    
+    # Post-flop strategy
+    else:
+        # Strong hand
+        if hand_strength >= 8:
+            # Value bet/raise
+            if random.random() < 0.8:
+                return 'raise'
+            else:
+                return 'call'
+        # Decent hand
+        elif hand_strength >= 5:
+            # Pot odds consideration - call if getting good odds
+            pot_odds = call_amount / (pot + call_amount)
+            win_probability = hand_strength / 10  # Simplified win probability
+            
+            if win_probability > pot_odds:
+                return 'call'
+            elif call_amount == 0:
+                return random.choice(['check', 'raise'])  # Mix of checking and raising
+            else:
+                return 'fold'
+        # Weak hand
+        else:
+            if call_amount == 0:
+                return 'check'
+            # Occasionally bluff
+            elif random.random() < 0.2 and game_stage == 'river':
+                return 'raise'
+            else:
+                return 'fold'
+
+def calculate_hand_strength(hand, community_cards, game_stage):
+    """
+    Calculate a simplified hand strength on a scale of 0-10.
+    
+    Args:
+        hand: List of player's hole cards
+        community_cards: List of community cards
+        game_stage: Current stage of the game
+        
+    Returns:
+        float: Hand strength value between 0-10
+    """
+    # Check if we have valid cards
+    if not hand or len(hand) < 2:
+        return 0
+    
+    # Convert card representation if needed
+    # This depends on your card representation format
+    
+    # Pre-flop hand strength based on common starting hands
+    if game_stage == 'pre_flop':
+        # Check for pairs
+        if hand[0]['rank'] == hand[1]['rank']:
+            rank_value = card_rank_to_value(hand[0]['rank'])
+            # High pairs (AA, KK, QQ, JJ)
+            if rank_value >= 11:
+                return 9.0 + (rank_value - 11) / 3.0  # AA=10, KK=9.67, QQ=9.33, JJ=9
+            # Medium pairs (TT through 77)
+            elif rank_value >= 7:
+                return 7.0 + (rank_value - 7) / 3.0
+            # Low pairs
+            else:
+                return 5.0 + rank_value / 7.0
+        
+        # Check for suited cards
+        elif hand[0]['suit'] == hand[1]['suit']:
+            rank1 = card_rank_to_value(hand[0]['rank'])
+            rank2 = card_rank_to_value(hand[1]['rank'])
+            high_card = max(rank1, rank2)
+            low_card = min(rank1, rank2)
+            
+            # Suited high cards
+            if high_card >= 12 and low_card >= 10:  # AK, AQ, KQ suited
+                return 8.0
+            elif high_card >= 14 and low_card >= 8:  # AJ, AT, A9, KJ, KT suited
+                return 7.0
+            elif high_card >= 11:  # Other suited with face card
+                return 6.0
+            else:
+                # Suited connectors
+                if high_card - low_card == 1:
+                    return 5.5
+                # Suited one-gappers
+                elif high_card - low_card == 2:
+                    return 4.5
+                # Other suited
+                else:
+                    return 4.0
+        
+        # Unsuited cards
+        else:
+            rank1 = card_rank_to_value(hand[0]['rank'])
+            rank2 = card_rank_to_value(hand[1]['rank'])
+            high_card = max(rank1, rank2)
+            low_card = min(rank1, rank2)
+            
+            # High unsuited cards
+            if high_card >= 14 and low_card >= 12:  # AK, AQ unsuited
+                return 7.0
+            elif high_card >= 14 and low_card >= 10:  # AJ, AT unsuited
+                return 6.0
+            elif high_card >= 13 and low_card >= 10:  # KQ, KJ, QJ unsuited
+                return 5.5
+            elif high_card >= 14:  # Ax unsuited
+                return 3.0 + low_card / 7.0
+            # Connectors
+            elif high_card - low_card == 1 and high_card >= 9:
+                return 4.0
+            # Other trash hands
+            else:
+                return 2.0
+    
+    # Post-flop simplified evaluation
+    else:
+        # In a real implementation, you would evaluate the complete hand
+        # including community cards to determine made hands and draws
+        
+        # This is a simplified placeholder that returns mid-range strength
+        # In production, replace with proper hand evaluator
+        return 5.0  # Placeholder - implement real evaluation logic
+
+def card_rank_to_value(rank):
+    """Convert card rank to numeric value"""
+    if isinstance(rank, int) or rank.isdigit():
+        return int(rank)
+    
+    if rank == 'A':
+        return 14
+    elif rank == 'K':
+        return 13
+    elif rank == 'Q':
+        return 12
+    elif rank == 'J':
+        return 11
+    elif rank == 'T':
+        return 10
+    else:
+        # Default case
+        return 2
 
 # Run the application
 if __name__ == '__main__':
