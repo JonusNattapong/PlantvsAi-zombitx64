@@ -2,6 +2,13 @@
 
 A Tic-tac-toe game with multiple AI opponent strategies implemented in both desktop (Pygame) and web application versions.
 
+
+
+
+## Video
+
+[Watch Video](/static/demo.mp4)
+
 ## Features
 
 - Interactive 3x3 Tic-tac-toe board
@@ -13,6 +20,12 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented in both desk
 - Real-time performance analysis
 - Strategy switching during gameplay
 - Modern user interface
+
+## Static
+
+![Screenshot](./static/image1.png)
+
+![Screenshot](/static/image.png)
 
 ## System Architecture
 
