@@ -4,7 +4,7 @@
 
 ## วิดีโอบน YouTube
 
-[![Video](https://img.youtube.com/vi/L88agPTTn9M/0.jpg)](https://www.youtube.com/watch?v=L88agPTTn9M)
+[![Video](https://img.youtube.com/vi/4X5j6RTBqu0/0.jpg)](https://www.youtube.com/watch?v=4X5j6RTBqu0)
 
 ## คุณสมบัติของเกม
 
