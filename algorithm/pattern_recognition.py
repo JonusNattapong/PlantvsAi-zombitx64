@@ -12,6 +12,13 @@ class PatternRecognitionAgent:
         self.player_patterns = {}
         self.current_game_moves = []
         self.load_patterns()
+        self.settings = None
+        self.game_settings = None
+    
+    def set_game_settings(self, game_settings):
+        """ตั้งค่าการตั้งค่าเกม"""
+        self.game_settings = game_settings
+        self.settings = game_settings.get_settings()
     
     def load_patterns(self):
         """โหลดข้อมูลรูปแบบการเล่นจากไฟล์"""
@@ -69,28 +76,23 @@ class PatternRecognitionAgent:
                 "loss_rate": 0,
                 "board_patterns": {},
                 "first_moves": {},
-                "favorite_moves": {}
+                "favorite_moves": {},
+                "adaptation_level": 1.0  # ระดับการปรับตัว
             }
         
-        # อัปเดตจำนวนเกมที่เล่น
+        # ปรับการวิเคราะห์ตามระดับความยาก
+        pattern_weight = self.settings['pattern_weight']
+        adaptation_factor = self.player_patterns[player_id]["adaptation_level"]
+        
+        # อัปเดตข้อมูลการเล่น
         player_data = self.player_patterns[player_id]
         player_data["games_played"] += 1
         
-        # อัปเดตอัตราการชนะ/แพ้/เสมอ
-        games_played = player_data["games_played"]
-        
+        # ปรับระดับการปรับตัวตามผลการเล่น
         if winner == 'O':  # ผู้เล่นชนะ
-            player_data["win_rate"] = ((player_data["win_rate"] * (games_played - 1)) + 100) / games_played
-            player_data["loss_rate"] = (player_data["loss_rate"] * (games_played - 1)) / games_played
-            player_data["draw_rate"] = (player_data["draw_rate"] * (games_played - 1)) / games_played
+            player_data["adaptation_level"] = min(1.0, player_data["adaptation_level"] + 0.1)
         elif winner == 'X':  # AI ชนะ
-            player_data["win_rate"] = (player_data["win_rate"] * (games_played - 1)) / games_played
-            player_data["loss_rate"] = ((player_data["loss_rate"] * (games_played - 1)) + 100) / games_played
-            player_data["draw_rate"] = (player_data["draw_rate"] * (games_played - 1)) / games_played
-        else:  # เสมอ
-            player_data["win_rate"] = (player_data["win_rate"] * (games_played - 1)) / games_played
-            player_data["loss_rate"] = (player_data["loss_rate"] * (games_played - 1)) / games_played
-            player_data["draw_rate"] = ((player_data["draw_rate"] * (games_played - 1)) + 100) / games_played
+            player_data["adaptation_level"] = max(0.5, player_data["adaptation_level"] - 0.1)
         
         # บันทึกรูปแบบการเล่น
         for move_data in self.current_game_moves:
@@ -98,27 +100,35 @@ class PatternRecognitionAgent:
                 board_pattern = move_data["board"]
                 move_str = move_data["move"]
                 
+                # ปรับน้ำหนักรูปแบบตามระดับการปรับตัว
+                weight = pattern_weight * adaptation_factor
+                
                 # บันทึกรูปแบบกระดาน
                 if board_pattern not in player_data["board_patterns"]:
-                    player_data["board_patterns"][board_pattern] = {}
+                    player_data["board_patterns"][board_pattern] = {
+                        "count": 0,
+                        "moves": {},
+                        "weight": weight
+                    }
                 
-                if move_str not in player_data["board_patterns"][board_pattern]:
-                    player_data["board_patterns"][board_pattern][move_str] = 0
+                board_data = player_data["board_patterns"][board_pattern]
+                board_data["count"] += 1
                 
-                player_data["board_patterns"][board_pattern][move_str] += 1
+                # บันทึกการเคลื่อนไหวที่โปรด
+                if move_str not in board_data["moves"]:
+                    board_data["moves"][move_str] = 0
+                board_data["moves"][move_str] += weight
                 
-                # บันทึกการเคลื่อนที่ที่ชอบ
-                if move_str not in player_data["favorite_moves"]:
-                    player_data["favorite_moves"][move_str] = 0
-                
-                player_data["favorite_moves"][move_str] += 1
-                
-                # บันทึกการเคลื่อนที่แรก
-                if len(self.current_game_moves) <= 2:  # การเคลื่อนที่แรกของแต่ละฝ่าย
+                # บันทึกการเคลื่อนไหวแรก
+                if len(self.current_game_moves) == 1:
                     if move_str not in player_data["first_moves"]:
                         player_data["first_moves"][move_str] = 0
-                    
-                    player_data["first_moves"][move_str] += 1
+                    player_data["first_moves"][move_str] += weight
+                
+                # บันทึกการเคลื่อนไหวที่โปรด
+                if move_str not in player_data["favorite_moves"]:
+                    player_data["favorite_moves"][move_str] = 0
+                player_data["favorite_moves"][move_str] += weight
         
         # บันทึกข้อมูลรูปแบบ
         self.save_patterns()
@@ -141,7 +151,7 @@ class PatternRecognitionAgent:
             
             if patterns:
                 # หาการเคลื่อนที่ที่พบบ่อยที่สุดสำหรับรูปแบบนี้
-                best_move = max(patterns.items(), key=lambda x: x[1])[0]
+                best_move = max(patterns["moves"].items(), key=lambda x: x[1])[0]
                 row, col = map(int, best_move.split(','))
                 return (row, col)
         

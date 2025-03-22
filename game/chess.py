@@ -2,6 +2,7 @@ import json
 import os
 import random
 from copy import deepcopy
+from game_settings import GameSettings
 
 class Chess:
     """
@@ -15,18 +16,44 @@ class Chess:
         self.game_over = False
         self.winner = None
         self.player_turn = True  # True for player (White), False for AI (Black)
-        self.en_passant_target = None  # Square that can be captured via en passant
+        self.en_passant_target = None
         self.castling_rights = {
             'K': True,  # White king-side
             'Q': True,  # White queen-side
             'k': True,  # Black king-side
             'q': True   # Black queen-side
         }
-        self.halfmove_clock = 0  # For fifty-move rule
-        self.fullmove_number = 1  # Increments after Black's move
-        self.move_history = []  # List of moves in algebraic notation
+        self.halfmove_clock = 0
+        self.fullmove_number = 1
+        self.move_history = []
+        self.game_settings = GameSettings()
         self.reset_game()
         self.stats = self.load_stats()
+    
+    def set_difficulty(self, difficulty):
+        """ตั้งค่าระดับความยาก"""
+        self.game_settings.set_difficulty(difficulty)
+        self.settings = self.game_settings.get_settings()
+    
+    def get_ai_move(self):
+        """รับการเคลื่อนที่ของ AI"""
+        settings = self.game_settings.adjust_settings('chess')
+        
+        # ใช้ MCTS สำหรับการค้นหาการเคลื่อนที่ที่ดีที่สุด
+        from algorithm.mcts import MCTS
+        mcts = MCTS()
+        
+        # ปรับพารามิเตอร์ตามระดับความยาก
+        mcts.set_parameters(
+            search_depth=settings['search_depth'],
+            time_limit=settings['time_limit'],
+            pattern_weight=settings['pattern_weight'],
+            randomness=settings['randomness']
+        )
+        
+        # ค้นหาการเคลื่อนที่ที่ดีที่สุด
+        best_move = mcts.search(self.board, self.player_turn)
+        return best_move
     
     def reset_game(self):
         """Reset the game to initial state"""

@@ -83,6 +83,10 @@ player_patterns = {}
 player_id = "default_player"
 current_game_moves = []
 
+# Game settings
+game_settings = GameSettings()
+settings = game_settings.get_settings()
+
 # Game statistics
 game_stats = {
     "total_games": 0,
@@ -283,6 +287,9 @@ def draw_welcome_screen():
     # Draw AI mode selector
     draw_welcome_ai_selector()
     
+    # Draw difficulty selector
+    draw_welcome_difficulty_selector()
+    
     # Draw statistics section if games have been played
     if game_stats["total_games"] > 0:
         draw_welcome_stats()
@@ -374,9 +381,41 @@ def draw_welcome_ai_selector():
         draw_button(mode, (x_pos, y_pos, button_width, button_height), 
                   color, border_color=border_color, border_radius=10)
 
+def draw_welcome_difficulty_selector():
+    """Draw buttons to select difficulty on welcome screen with modern design"""
+    title_y = HEIGHT // 2 + 220
+    text = FONT_BOLD.render("Select Difficulty", True, THEME["text_primary"])
+    screen.blit(text, (WIDTH // 2 - text.get_width() // 2, title_y))
+    
+    difficulties = ["Easy", "Medium", "Hard"]
+    button_width = min(180, WIDTH // 3)
+    button_height = 50
+    button_spacing = 20
+    buttons_total_width = len(difficulties) * button_width + (len(difficulties) - 1) * button_spacing
+    starting_x = WIDTH // 2 - buttons_total_width // 2
+    y_pos = title_y + text.get_height() + 15
+    
+    for i, difficulty in enumerate(difficulties):
+        x_pos = starting_x + i * (button_width + button_spacing)
+        
+        # Draw button
+        color = THEME["accent_primary"] if i == game_settings.difficulty else THEME["bg_secondary"]
+        border_color = THEME["accent_secondary"] if i == game_settings.difficulty else THEME["grid_lines"]
+        
+        # Draw shadow
+        if i == game_settings.difficulty:
+            shadow_offset = 3
+            pygame.draw.rect(screen, (0, 0, 0, 100), 
+                           (x_pos + shadow_offset, y_pos + shadow_offset, button_width, button_height), 
+                           border_radius=10)
+        
+        # Draw button
+        draw_button(difficulty, (x_pos, y_pos, button_width, button_height), 
+                  color, border_color=border_color, border_radius=10)
+
 def handle_welcome_click(pos):
     """Handle clicks on welcome screen"""
-    global in_welcome_screen, in_game, current_ai_mode
+    global in_welcome_screen, in_game, current_ai_mode, game_settings
     
     # Check if clicked on start button
     button_width = min(WIDTH - 80, 300)
@@ -418,6 +457,27 @@ def handle_welcome_click(pos):
             x_pos = starting_x + i * (button_width + button_spacing)
             if x_pos <= pos[0] <= x_pos + button_width:
                 current_ai_mode = i
+                # Redraw the welcome screen to show selection
+                draw_welcome_screen()
+                return True
+    
+    # Check if clicked on difficulty selector
+    title_y = HEIGHT // 2 + 220
+    text = FONT_BOLD.render("Select Difficulty", True, THEME["text_primary"])
+    
+    difficulties = ["Easy", "Medium", "Hard"]
+    button_width = min(180, WIDTH // 3)
+    button_height = 50
+    button_spacing = 20
+    buttons_total_width = len(difficulties) * button_width + (len(difficulties) - 1) * button_spacing
+    starting_x = WIDTH // 2 - buttons_total_width // 2
+    y_pos = title_y + text.get_height() + 15
+    
+    if y_pos <= pos[1] <= y_pos + button_height:
+        for i in range(len(difficulties)):
+            x_pos = starting_x + i * (button_width + button_spacing)
+            if x_pos <= pos[0] <= x_pos + button_width:
+                game_settings.difficulty = i
                 # Redraw the welcome screen to show selection
                 draw_welcome_screen()
                 return True
@@ -861,279 +921,104 @@ def minimax(board, depth, is_maximizing):
                     best_score = min(score, best_score)
         return best_score
 
-def best_move_minimax():
+def best_move_minimax(depth):
     """Find best move using minimax algorithm with optimization for first moves"""
-    # For first AI move, use a predefined strategy for better performance
-    empty_count = sum(1 for row in range(BOARD_ROWS) for col in range(BOARD_COLS) if board[row][col] is None)
+    settings = game_settings.adjust_settings('tictactoe')
     
-    if empty_count == 9:  # First move of the game
-        # Start with a corner for variety
-        return random.choice([(0, 0), (0, 2), (2, 0), (2, 2)])
+    # ทำให้ AI ช้าลงในโหมดง่ายเพื่อให้ผู้เล่นมีเวลาคิด
+    if settings['ai_delay'] > 0:
+        time.sleep(settings['ai_delay'])
     
-    if empty_count == 8:  # Second move of the game
-        # If player took center, take a corner
-        if board[1][1] == 'O':
-            return random.choice([(0, 0), (0, 2), (2, 0), (2, 2)])
-        # If player took a corner, take center
-        elif board[0][0] == 'O' or board[0][2] == 'O' or board[2][0] == 'O' or board[2][2] == 'O':
-            return (1, 1)
-        # If player took a side, take center
-        else:
-            return (1, 1)
+    # ปรับความลึกของการค้นหาตามระดับความยาก
+    depth = min(depth, settings['search_depth'])
     
-    # For other moves, use minimax with alpha-beta pruning
-    best_score = -float('inf')
-    move = None
-    
-    for row in range(BOARD_ROWS):
-        for col in range(BOARD_COLS):
-            if board[row][col] is None:
-                board[row][col] = 'X'  # AI
-                score = minimax(board, 0, False)
-                board[row][col] = None  # Undo move
-                if score > best_score:
-                    best_score = score
-                    move = (row, col)
-    
-    return move
-
-def board_to_string(board):
-    """Convert board to string representation"""
-    result = ""
-    for row in range(BOARD_ROWS):
-        for col in range(BOARD_COLS):
-            if board[row][col] is None:
-                result += "_"
-            else:
-                result += board[row][col]
-    return result
-
-def record_player_move(row, col):
-    """Record player move for pattern recognition"""
-    global current_game_moves
-    board_str = board_to_string(board)
-    current_game_moves.append({
-        "board": board_str,
-        "move": f"{row},{col}",
-        "player": player_id,
-        "mark": "O"
-    })
-
-def record_ai_move(row, col):
-    """Record AI move for pattern recognition"""
-    global current_game_moves
-    board_str = board_to_string(board)
-    current_game_moves.append({
-        "board": board_str,
-        "move": f"{row},{col}",
-        "player": "AI",
-        "mark": "X"
-    })
-
-def analyze_game_patterns():
-    """Analyze player patterns after game is over"""
-    global player_patterns
-    
-    if player_id not in player_patterns:
-        player_patterns[player_id] = {
-            "games_played": 0,
-            "win_rate": 0,
-            "draw_rate": 0,
-            "loss_rate": 0,
-            "board_patterns": {},
-            "first_moves": {},
-            "favorite_moves": {}
-        }
-    
-    # Update games played
-    player_patterns[player_id]["games_played"] += 1
-    
-    # Update win/loss/draw rates
-    games_played = player_patterns[player_id]["games_played"]
-    
-    if winner == 'O':  # Player won
-        player_patterns[player_id]["win_rate"] = (
-            (player_patterns[player_id]["win_rate"] * (games_played - 1) + 1) / games_played
-        )
-    elif winner == 'X':  # AI won
-        player_patterns[player_id]["loss_rate"] = (
-            (player_patterns[player_id]["loss_rate"] * (games_played - 1) + 1) / games_played
-        )
-    else:  # Draw
-        player_patterns[player_id]["draw_rate"] = (
-            (player_patterns[player_id]["draw_rate"] * (games_played - 1) + 1) / games_played
-        )
-    
-    # Record board patterns and moves
-    for move_data in current_game_moves:
-        if move_data["player"] == player_id:
-            board_pattern = move_data["board"]
-            move_str = move_data["move"]
-            
-            # Record board pattern
-            if board_pattern not in player_patterns[player_id]["board_patterns"]:
-                player_patterns[player_id]["board_patterns"][board_pattern] = {}
-            
-            if move_str not in player_patterns[player_id]["board_patterns"][board_pattern]:
-                player_patterns[player_id]["board_patterns"][board_pattern][move_str] = 0
-            
-            player_patterns[player_id]["board_patterns"][board_pattern][move_str] += 1
-            
-            # Record favorite moves
-            if move_str not in player_patterns[player_id]["favorite_moves"]:
-                player_patterns[player_id]["favorite_moves"][move_str] = 0
-            
-            player_patterns[player_id]["favorite_moves"][move_str] += 1
-            
-            # Record first move if this is the first move of the game
-            if len(current_game_moves) <= 2:  # First move by each player
-                if move_data["mark"] == 'O':  # Player goes first
-                    if move_str not in player_patterns[player_id]["first_moves"]:
-                        player_patterns[player_id]["first_moves"][move_str] = 0
-                    
-                    player_patterns[player_id]["first_moves"][move_str] += 1
-    
-    # Save patterns to file
-    save_pattern_data()
-
-def predict_player_move():
-    """Predict player's next move based on current board"""
-    if player_id not in player_patterns:
-        return None
-    
-    current_board = board_to_string(board)
-    
-    # Check if we've seen this board pattern before
-    if current_board in player_patterns[player_id]["board_patterns"]:
-        patterns = player_patterns[player_id]["board_patterns"][current_board]
-        
-        if patterns:
-            # Find most common move for this pattern
-            best_move = max(patterns.items(), key=lambda x: x[1])[0]
-            row, col = map(int, best_move.split(','))
-            return (row, col)
-    
-    # If no pattern match, check favorite moves
-    if player_patterns[player_id]["favorite_moves"]:
-        favorite_moves = player_patterns[player_id]["favorite_moves"]
-        valid_moves = []
-        
-        for move_str, count in favorite_moves.items():
-            row, col = map(int, move_str.split(','))
-            if row < 3 and col < 3 and board[row][col] is None:
-                valid_moves.append((move_str, count))
-        
-        if valid_moves:
-            # Return the most common valid favorite move
-            best_move = max(valid_moves, key=lambda x: x[1])[0]
-            row, col = map(int, best_move.split(','))
-            return (row, col)
-    
-    # If no patterns or favorites, return None for fallback strategy
-    return None
+    return minimax(board, depth, False)[1]
 
 def pattern_recognition_move():
     """Choose move based on pattern recognition with improved strategy"""
-    # First check for AI winning move
-    for r in range(BOARD_ROWS):
-        for c in range(BOARD_COLS):
-            if board[r][c] is None:
-                # Try this move
-                temp_board = [row[:] for row in board]
-                temp_board[r][c] = 'X'
-                
-                if check_win_for_board(temp_board) == 'X':
-                    # This is a winning move
-                    return r, c
+    settings = game_settings.adjust_settings('tictactoe')
     
-    # Then check for blocking player's winning move
-    for r in range(BOARD_ROWS):
-        for c in range(BOARD_COLS):
-            if board[r][c] is None:
-                # Try this move for player
-                temp_board = [row[:] for row in board]
-                temp_board[r][c] = 'O'
-                
-                if check_win_for_board(temp_board) == 'O':
-                    # Block this winning move
-                    return r, c
-    
-    # Try to predict player's next move
+    # ทำนายการเคลื่อนที่ของผู้เล่น
     predicted_move = predict_player_move()
-    if predicted_move:
-        row, col = predicted_move
-        # Check if this would be a winning move for player
-        temp_board = [row[:] for row in board]
-        temp_board[row][col] = 'O'
-        
-        if check_win_for_board(temp_board) == 'O':
-            # Block this potential future winning move
+    
+    # หาการเคลื่อนที่ที่ดีที่สุดตามรูปแบบที่พบ
+    patterns = analyze_game_patterns()
+    
+    # ปรับความสุ่มตามระดับความยาก
+    if settings['randomness'] > random.random():
+        empty_cells = [(r, c) for r in range(BOARD_ROWS) for c in range(BOARD_COLS) if board[r][c] is None]
+        if empty_cells:
+            return random.choice(empty_cells)
+    
+    # หาการเคลื่อนที่ที่ดีที่สุด
+    best_move = None
+    best_score = float('-inf')
+    
+    for r in range(BOARD_ROWS):
+        for c in range(BOARD_COLS):
+            if board[r][c] is None:
+                # คำนวณคะแนนตามรูปแบบที่พบ
+                score = 0
+                if predicted_move == (r, c):
+                    score += 100
+                if patterns and (r, c) in patterns:
+                    score += patterns[(r, c)] * settings['pattern_weight']
+                
+                if score > best_score:
+                    best_score = score
+                    best_move = (r, c)
+    
+    return best_move if best_move else (random.randint(0, 2), random.randint(0, 2))
+
+def calculate_board_complexity(board):
+    """คำนวณความซับซ้อนของกระดาน"""
+    # นับจำนวนช่องว่าง
+    empty_cells = sum(1 for row in board for cell in row if cell is None)
+    
+    # นับจำนวนการจัดเรียงที่เป็นไปได้
+    possible_lines = 0
+    for row in range(BOARD_ROWS):
+        for col in range(BOARD_COLS):
+            if board[row][col] is None:
+                # ตรวจสอบแนวนอน
+                if col < 2 and (board[row][col+1] is None or board[row][col+1] == board[row][col]):
+                    possible_lines += 1
+                # ตรวจสอบแนวตั้ง
+                if row < 2 and (board[row+1][col] is None or board[row+1][col] == board[row][col]):
+                    possible_lines += 1
+                # ตรวจสอบแนวทแยง
+                if row < 2 and col < 2 and (board[row+1][col+1] is None or board[row+1][col+1] == board[row][col]):
+                    possible_lines += 1
+                if row < 2 and col > 0 and (board[row+1][col-1] is None or board[row+1][col-1] == board[row][col]):
+                    possible_lines += 1
+    
+    # คำนวณความซับซ้อนโดยรวม
+    complexity = (empty_cells + possible_lines) / 10.0
+    return complexity
+
+def ai_move():
+    """AI makes its move based on current settings"""
+    settings = game_settings.adjust_settings('tictactoe')
+    
+    # คำนวณเวลาคิดตามความซับซ้อนของกระดาน
+    move_count = sum(1 for row in board for cell in row if cell is not None)
+    complexity = calculate_board_complexity(board)
+    thinking_time = game_settings.calculate_thinking_time('tictactoe', move_count, complexity)
+    
+    # ปรับความลึกของการค้นหาตามเวลาคิด
+    search_depth = min(settings['search_depth'], int(thinking_time * 2))
+    
+    if settings['randomness'] > random.random():
+        # ทำให้การเคลื่อนที่ของ AI มีความสุ่มบ้าง
+        empty_cells = [(r, c) for r in range(BOARD_ROWS) for c in range(BOARD_COLS) if board[r][c] is None]
+        if empty_cells:
+            row, col = random.choice(empty_cells)
             return row, col
     
-    # Take center if available
-    if board[1][1] is None:
-        return 1, 1
-    
-    # Take corner if available
-    corners = [(0, 0), (0, 2), (2, 0), (2, 2)]
-    available_corners = [corner for corner in corners if board[corner[0]][corner[1]] is None]
-    if available_corners:
-        # Try to find a corner that creates a fork opportunity
-        for corner in available_corners:
-            temp_board = [row[:] for row in board]
-            temp_board[corner[0]][corner[1]] = 'X'
-            
-            # Count potential winning lines
-            winning_lines = 0
-            
-            # Check rows
-            for r in range(BOARD_ROWS):
-                x_count = o_count = 0
-                for c in range(BOARD_COLS):
-                    if temp_board[r][c] == 'X': x_count += 1
-                    if temp_board[r][c] == 'O': o_count += 1
-                if x_count == 2 and o_count == 0:
-                    winning_lines += 1
-            
-            # Check columns
-            for c in range(BOARD_COLS):
-                x_count = o_count = 0
-                for r in range(BOARD_ROWS):
-                    if temp_board[r][c] == 'X': x_count += 1
-                    if temp_board[r][c] == 'O': o_count += 1
-                if x_count == 2 and o_count == 0:
-                    winning_lines += 1
-            
-            # Check diagonals
-            x_count = o_count = 0
-            for i in range(BOARD_ROWS):
-                if temp_board[i][i] == 'X': x_count += 1
-                if temp_board[i][i] == 'O': o_count += 1
-            if x_count == 2 and o_count == 0:
-                winning_lines += 1
-            
-            x_count = o_count = 0
-            for i in range(BOARD_ROWS):
-                if temp_board[i][2-i] == 'X': x_count += 1
-                if temp_board[i][2-i] == 'O': o_count += 1
-            if x_count == 2 and o_count == 0:
-                winning_lines += 1
-            
-            # If this creates a fork (multiple winning opportunities), take it
-            if winning_lines >= 2:
-                return corner
-        
-        # If no fork opportunity, take any corner
-        return random.choice(available_corners)
-    
-    # Take any available edge
-    edges = [(0, 1), (1, 0), (1, 2), (2, 1)]
-    available_edges = [edge for edge in edges if board[edge[0]][edge[1]] is None]
-    if available_edges:
-        return random.choice(available_edges)
-    
-    # Fallback to minimax
-    return best_move_minimax()
+    if current_ai_mode == 0:  # Minimax
+        return best_move_minimax(search_depth)
+    else:  # Pattern Recognition
+        return pattern_recognition_move()
 
 def check_win_for_board(board):
     """Check win condition for a given board"""
@@ -1155,65 +1040,6 @@ def check_win_for_board(board):
         return board[2][0]
     
     return None
-
-def ai_move():
-    global player_turn, game_over, winner, game_stats
-    
-    if not game_over and not player_turn:
-        # Add thinking animation
-        draw_ai_thinking_animation()
-        
-        # Choose move based on current AI mode
-        if current_ai_mode == 0:  # Minimax
-            row, col = best_move_minimax()
-        else:  # Pattern Recognition
-            row, col = pattern_recognition_move()
-        
-        # Record AI move
-        record_ai_move(row, col)
-        
-        # Make the move
-        if mark_square(row, col, 'X'):
-            winner = check_win()
-            if winner or is_board_full():
-                game_over = True
-                update_game_stats()
-                analyze_game_patterns()
-                draw_game_over_overlay()
-            player_turn = True
-
-def draw_ai_thinking_animation():
-    """Draw a brief animation to show AI is thinking"""
-    # Calculate board position to center it
-    board_width = 3 * SQUARE_SIZE
-    board_x = WIDTH // 2 - board_width // 2
-    
-    # Draw thinking indicator at bottom of board
-    text = FONT.render("AI thinking", True, THEME["text_secondary"])
-    dots = ""
-    
-    for i in range(3):
-        # Update dots
-        dots += "."
-        thinking_text = FONT.render(f"AI thinking{dots}", True, THEME["text_secondary"])
-        
-        # Position at bottom of board
-        text_x = board_x + board_width // 2 - thinking_text.get_width() // 2
-        text_y = 3 * SQUARE_SIZE + 20
-        
-        # Clear previous text
-        pygame.draw.rect(screen, THEME["bg_primary"], 
-                       (board_x, text_y, board_width, thinking_text.get_height()))
-        
-        # Draw new text
-        screen.blit(thinking_text, (text_x, text_y))
-        pygame.display.update()
-        pygame.time.delay(200)
-    
-    # Clear thinking text
-    pygame.draw.rect(screen, THEME["bg_primary"], 
-                   (board_x, 3 * SQUARE_SIZE + 20, board_width, text.get_height()))
-    pygame.display.update()
 
 def update_game_stats():
     """Update game statistics based on game outcome"""
@@ -1510,6 +1336,44 @@ def handle_game_click(pos):
                 return True
     
     return False
+
+class GameSettings:
+    def __init__(self):
+        self.difficulty = 1
+        self.search_depth = 5
+        self.randomness = 0.1
+        self.ai_delay = 0.5
+        self.pattern_weight = 1.0
+
+    def adjust_settings(self, game):
+        if game == 'tictactoe':
+            if self.difficulty == 0:  # Easy
+                self.search_depth = 3
+                self.randomness = 0.2
+                self.ai_delay = 0.8
+                self.pattern_weight = 0.8
+            elif self.difficulty == 1:  # Medium
+                self.search_depth = 5
+                self.randomness = 0.1
+                self.ai_delay = 0.5
+                self.pattern_weight = 1.0
+            elif self.difficulty == 2:  # Hard
+                self.search_depth = 7
+                self.randomness = 0.05
+                self.ai_delay = 0.2
+                self.pattern_weight = 1.2
+
+        return {
+            'search_depth': self.search_depth,
+            'randomness': self.randomness,
+            'ai_delay': self.ai_delay,
+            'pattern_weight': self.pattern_weight
+        }
+
+    def calculate_thinking_time(self, game, move_count, complexity):
+        if game == 'tictactoe':
+            thinking_time = 0.5 + (move_count * 0.1) + (complexity * 0.2)
+            return thinking_time
 
 # Main game loop
 calculate_dimensions(WIDTH, HEIGHT)  # Initialize dimensions

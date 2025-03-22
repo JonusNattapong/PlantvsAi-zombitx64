@@ -1,7 +1,9 @@
 import json
 import os
 import random
+import time
 from copy import deepcopy
+from game_settings import GameSettings
 
 class Checkers:
     """
@@ -16,8 +18,15 @@ class Checkers:
         self.winner = None
         self.player_turn = True  # True for player (O), False for AI (X)
         self.must_jump = False
+        self.game_settings = GameSettings()
+        self.settings = self.game_settings.get_settings()
         self.reset_game()
         self.stats = self.load_stats()
+    
+    def set_difficulty(self, difficulty):
+        """ตั้งค่าระดับความยาก"""
+        self.game_settings.set_difficulty(difficulty)
+        self.settings = self.game_settings.get_settings()
     
     def reset_game(self):
         """Reset the game to initial state"""
@@ -312,51 +321,100 @@ class Checkers:
         # Game continues
         return False
     
-    def evaluate_board(self, max_player='X'):
-        """Heuristic evaluation function for minimax algorithm
+    def calculate_board_complexity(self, board):
+        """คำนวณความซับซ้อนของกระดาน"""
+        # นับจำนวนช่องว่าง
+        empty_cells = sum(1 for row in board for cell in row if cell is None)
         
-        Args:
-            max_player: The player to maximize the score for ('X' for AI)
-            
-        Returns:
-            float: Score for the current board state
-        """
-        min_player = 'O' if max_player == 'X' else 'X'
+        # นับจำนวนชิ้นที่ยังเหลืออยู่
+        ai_pieces = sum(1 for row in board for cell in row 
+                       if cell and cell['piece'] == 'X')
+        player_pieces = sum(1 for row in board for cell in row 
+                          if cell and cell['piece'] == 'O')
         
-        # Count pieces, kings and positions
-        max_pieces = max_kings = max_position_value = 0
-        min_pieces = min_kings = min_position_value = 0
-        
+        # นับจำนวนการจับที่เป็นไปได้
+        possible_jumps = 0
         for row in range(self.ROWS):
             for col in range(self.COLS):
-                if self.board[row][col] is not None:
-                    # Position value (pieces near the edges are safer)
-                    pos_value = 0
-                    if row == 0 or row == self.ROWS - 1 or col == 0 or col == self.COLS - 1:
-                        pos_value = 2  # Edge pieces
-                    
-                    if self.board[row][col]['piece'] == max_player:
-                        max_pieces += 1
-                        max_position_value += pos_value
-                        if self.board[row][col]['king']:
-                            max_kings += 1
-                    else:
-                        min_pieces += 1
-                        min_position_value += pos_value
-                        if self.board[row][col]['king']:
-                            min_kings += 1
+                piece = board[row][col]
+                if piece and piece['piece'] == 'X':
+                    # ตรวจสอบการจับในทิศทางต่างๆ
+                    directions = [
+                        (-2, -2), (-2, 2), (2, -2), (2, 2)
+                    ]
+                    for dr, dc in directions:
+                        new_row, new_col = row + dr, col + dc
+                        mid_row, mid_col = row + dr//2, col + dc//2
+                        
+                        if (0 <= new_row < self.ROWS and 0 <= new_col < self.COLS and
+                            self.board[new_row][new_col] is None and
+                            self.board[mid_row][mid_col] and
+                            self.board[mid_row][mid_col]['piece'] == 'O'):
+                            possible_jumps += 1
         
-        # Score based on pieces and kings
-        piece_score = max_pieces - min_pieces
-        king_score = 2 * (max_kings - min_kings)  # Kings are worth more
-        position_score = max_position_value - min_position_value
+        # คำนวณความซับซ้อนโดยรวม
+        complexity = (empty_cells + possible_jumps + 
+                     abs(ai_pieces - player_pieces)) / 20.0
+        return complexity
+    
+    def get_ai_move(self):
+        """รับการเคลื่อนที่ของ AI"""
+        settings = self.game_settings.adjust_settings('checkers')
         
-        # Add more weight to pieces when there are few pieces left
-        total_pieces = max_pieces + min_pieces
-        piece_weight = 1.0 + (24 - total_pieces) / 24.0  # Increases as pieces are captured
+        # คำนวณเวลาคิดตามความซับซ้อนของกระดาน
+        move_count = sum(1 for row in self.board for cell in row if cell is not None)
+        complexity = self.calculate_board_complexity(self.board)
+        thinking_time = self.game_settings.calculate_thinking_time('checkers', move_count, complexity)
         
-        # Final score combining different factors
-        score = piece_weight * piece_score + king_score + 0.5 * position_score
+        # ปรับความลึกของการค้นหาตามเวลาคิด
+        search_depth = min(settings['search_depth'], int(thinking_time * 1.5))
+        
+        # ใช้ MCTS สำหรับการค้นหาการเคลื่อนที่ที่ดีที่สุด
+        from algorithm.mcts import MCTS
+        mcts = MCTS()
+        
+        # ปรับพารามิเตอร์ตามระดับความยาก
+        mcts.set_parameters(
+            search_depth=search_depth,
+            time_limit=thinking_time,
+            pattern_weight=settings['pattern_weight'],
+            randomness=settings['randomness'],
+            king_capture_bonus=settings['king_capture_bonus']
+        )
+        
+        # ทำให้ AI ช้าลงในโหมดง่ายเพื่อให้ผู้เล่นมีเวลาคิด
+        if settings['ai_delay'] > 0:
+            time.sleep(settings['ai_delay'])
+        
+        # ค้นหาการเคลื่อนที่ที่ดีที่สุด
+        best_move = mcts.search(self.board, self.player_turn)
+        return best_move
+    
+    def evaluate_board(self, board):
+        """ประเมินค่ากระดาน"""
+        settings = self.game_settings.adjust_settings('checkers')
+        
+        score = 0
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                piece = board[row][col]
+                if piece:
+                    if piece['piece'] == 'O':  # Player piece
+                        score -= 1
+                        if piece['king']:
+                            score -= 2
+                    else:  # AI piece
+                        score += 1
+                        if piece['king']:
+                            score += 2
+        
+        # เพิ่มโบนัสสำหรับการจับกษัตริย์
+        if self.must_jump:
+            score += settings['king_capture_bonus']
+        
+        # ปรับคะแนนตามความซับซ้อนของกระดาน
+        complexity = self.calculate_board_complexity(board)
+        score *= (1 + complexity * 0.1)
         
         return score
     
@@ -373,7 +431,7 @@ class Checkers:
         """
         # Terminal cases
         if depth == 0 or self.game_over:
-            return None, self.evaluate_board('X')
+            return None, self.evaluate_board(self.board)
         
         # Find all valid moves for current player
         all_moves = {}  # (from_pos, to_pos): captured_list

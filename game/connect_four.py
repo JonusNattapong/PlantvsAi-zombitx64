@@ -3,6 +3,8 @@ import json
 import os
 import random
 from copy import deepcopy
+from game_settings import GameSettings
+import time
 
 class ConnectFour:
     """
@@ -17,8 +19,15 @@ class ConnectFour:
         self.winner = None
         self.last_move = None
         self.player_turn = True  # True for player (O), False for AI (X)
+        self.game_settings = GameSettings()
+        self.settings = self.game_settings.get_settings()
         self.reset_game()
         self.stats = self.load_stats()
+    
+    def set_difficulty(self, difficulty):
+        """ตั้งค่าระดับความยาก"""
+        self.game_settings.set_difficulty(difficulty)
+        self.settings = self.game_settings.get_settings()
     
     def reset_game(self):
         """Reset the game to initial state"""
@@ -226,62 +235,146 @@ class ConnectFour:
                 valid_cols.append(col)
         return valid_cols
     
-    def evaluate_window(self, window, player):
-        """Evaluate a window of 4 cells for heuristic scoring"""
-        opponent = 'O' if player == 'X' else 'X'
+    def get_ai_move(self):
+        """รับการเคลื่อนที่ของ AI"""
+        settings = self.game_settings.adjust_settings('connect_four')
         
-        if window.count(player) == 4:
-            return 100  # Win
-        elif window.count(player) == 3 and window.count(None) == 1:
-            return 5  # Three in a row + empty
-        elif window.count(player) == 2 and window.count(None) == 2:
-            return 2  # Two in a row + empty
-        elif window.count(opponent) == 3 and window.count(None) == 1:
-            return -20  # Block opponent's three
+        # คำนวณเวลาคิดตามความซับซ้อนของกระดาน
+        move_count = sum(1 for row in self.board for cell in row if cell is not None)
+        complexity = self.calculate_board_complexity(self.board)
+        thinking_time = self.game_settings.calculate_thinking_time('connect_four', move_count, complexity)
         
-        return 0
+        # ปรับความลึกของการค้นหาตามเวลาคิด
+        search_depth = min(settings['search_depth'], int(thinking_time * 1.3))
+        
+        # ใช้ MCTS สำหรับการค้นหาการเคลื่อนที่ที่ดีที่สุด
+        from algorithm.mcts import MCTS
+        mcts = MCTS()
+        
+        # ปรับพารามิเตอร์ตามระดับความยาก
+        mcts.set_parameters(
+            search_depth=search_depth,
+            time_limit=thinking_time,
+            pattern_weight=settings['pattern_weight'],
+            randomness=settings['randomness'],
+            connect_bonus=settings['connect_bonus']
+        )
+        
+        # ทำให้ AI ช้าลงในโหมดง่ายเพื่อให้ผู้เล่นมีเวลาคิด
+        if settings['ai_delay'] > 0:
+            time.sleep(settings['ai_delay'])
+        
+        # ค้นหาการเคลื่อนที่ที่ดีที่สุด
+        best_move = mcts.search(self.board, self.player_turn)
+        return best_move
     
-    def evaluate_board(self, player):
-        """Heuristic evaluation of the board for minimax algorithm"""
-        if self.winner == player:
-            return 1000
-        elif self.winner is not None:
-            return -1000
-        elif self.winner is None and self.game_over:  # Draw
-            return 0
+    def calculate_board_complexity(self, board):
+        """คำนวณความซับซ้อนของกระดาน"""
+        # นับจำนวนช่องว่าง
+        empty_cells = sum(1 for row in board for cell in row if cell is None)
+        
+        # นับจำนวนการจัดเรียงที่เป็นไปได้
+        possible_lines = 0
+        
+        # ตรวจสอบแนวนอน
+        for row in range(self.ROWS):
+            for col in range(self.COLS - 3):
+                window = [board[row][col + i] for i in range(4)]
+                if None in window:
+                    possible_lines += 1
+        
+        # ตรวจสอบแนวตั้ง
+        for col in range(self.COLS):
+            for row in range(self.ROWS - 3):
+                window = [board[row + i][col] for i in range(4)]
+                if None in window:
+                    possible_lines += 1
+        
+        # ตรวจสอบแนวทแยง
+        for row in range(self.ROWS - 3):
+            for col in range(self.COLS - 3):
+                window = [board[row + i][col + i] for i in range(4)]
+                if None in window:
+                    possible_lines += 1
+                window = [board[row + i][col - i] for i in range(4)]
+                if None in window:
+                    possible_lines += 1
+        
+        # คำนวณความซับซ้อนโดยรวม
+        complexity = (empty_cells + possible_lines) / 50.0
+        return complexity
+    
+    def evaluate_board(self, board):
+        """ประเมินค่ากระดาน"""
+        settings = self.game_settings.adjust_settings('connect_four')
         
         score = 0
         
-        # Score center column (preferred position)
-        center_col = self.COLS // 2
-        center_count = sum(1 for row in range(self.ROWS) if self.board[row][center_col] == player)
-        score += center_count * 3
-        
-        # Score horizontal
-        for row in range(self.ROWS):
-            for col in range(self.COLS - 3):
-                window = [self.board[row][col+i] for i in range(4)]
-                score += self.evaluate_window(window, player)
-        
-        # Score vertical
+        # ตรวจสอบแนวตั้ง
         for col in range(self.COLS):
             for row in range(self.ROWS - 3):
-                window = [self.board[row+i][col] for i in range(4)]
-                score += self.evaluate_window(window, player)
+                window = [board[row + i][col] for i in range(4)]
+                score += self.evaluate_window(window, settings['connect_bonus'])
         
-        # Score diagonal (down-right)
+        # ตรวจสอบแนวนอน
+        for row in range(self.ROWS):
+            for col in range(self.COLS - 3):
+                window = [board[row][col + i] for i in range(4)]
+                score += self.evaluate_window(window, settings['connect_bonus'])
+        
+        # ตรวจสอบแนวทแยง (จากซ้ายล่างไปขวาบน)
         for row in range(self.ROWS - 3):
             for col in range(self.COLS - 3):
-                window = [self.board[row+i][col+i] for i in range(4)]
-                score += self.evaluate_window(window, player)
+                window = [board[row + i][col + i] for i in range(4)]
+                score += self.evaluate_window(window, settings['connect_bonus'])
         
-        # Score diagonal (up-right)
-        for row in range(3, self.ROWS):
-            for col in range(self.COLS - 3):
-                window = [self.board[row-i][col+i] for i in range(4)]
-                score += self.evaluate_window(window, player)
+        # ตรวจสอบแนวทแยง (จากขวาล่างไปซ้ายบน)
+        for row in range(self.ROWS - 3):
+            for col in range(3, self.COLS):
+                window = [board[row + i][col - i] for i in range(4)]
+                score += self.evaluate_window(window, settings['connect_bonus'])
+        
+        # ปรับคะแนนตามความซับซ้อนของกระดาน
+        complexity = self.calculate_board_complexity(board)
+        score *= (1 + complexity * 0.1)
         
         return score
+    
+    def evaluate_window(self, window, connect_bonus):
+        """ประเมินค่าของช่อง 4 ช่องที่ติดกัน"""
+        score = 0
+        ai_pieces = window.count('X')
+        player_pieces = window.count('O')
+        empty_spaces = window.count(None)
+        
+        if ai_pieces == 4:
+            score += 100 + connect_bonus
+        elif ai_pieces == 3 and empty_spaces == 1:
+            score += 5 + connect_bonus
+        elif ai_pieces == 2 and empty_spaces == 2:
+            score += 2
+        
+        if player_pieces == 3 and empty_spaces == 1:
+            score -= 4
+        elif player_pieces == 2 and empty_spaces == 2:
+            score -= 1
+        
+        return score
+    
+    def get_valid_moves(self):
+        """รับการเคลื่อนที่ที่ถูกต้อง"""
+        settings = self.game_settings.adjust_settings('connect_four')
+        
+        valid_moves = []
+        for col in range(self.COLS):
+            if self.board[0][col] is None:
+                valid_moves.append(col)
+        
+        # เพิ่มความสุ่มตามระดับความยาก
+        if settings['randomness'] > random.random():
+            random.shuffle(valid_moves)
+        
+        return valid_moves
     
     def is_terminal_node(self):
         """Check if the current state is a terminal node (game over)"""

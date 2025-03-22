@@ -290,11 +290,16 @@ class PokerGame:
         self.game_stage = "pre_flop"  # pre_flop, flop, turn, river, showdown
         self.winner = None
         self.stats = self.load_stats()
-        # เพิ่มการบันทึกประวัติการเดิมพัน
         self.bet_history = []
-        # เพิ่มบันทึกการกระทำในเกม
         self.action_log = []
-    
+        self.game_settings = GameSettings()
+        self.poker_settings = self.game_settings.get_poker_settings()
+        
+        # Initialize poker model
+        from poker_model import PokerModel
+        self.poker_model = PokerModel()
+        self.poker_model.load_model()
+
     def load_stats(self):
         """Load game statistics from file"""
         stats_file = 'poker_stats.json'
@@ -378,7 +383,6 @@ class PokerGame:
         self.current_bet = 0
         self.game_stage = "pre_flop"
         self.winner = None
-        # ล้างประวัติการเดิมพันและบันทึกการกระทำ
         self.bet_history = []
         self.action_log = []
     
@@ -443,7 +447,6 @@ class PokerGame:
             ],
             'current_player': self.players[self.current_player_idx].name,
             'winner': self.winner,
-            # Add hand descriptions
             'hand_descriptions': {
                 'high_card': 'High Card',
                 'pair': 'Pair',
@@ -456,9 +459,7 @@ class PokerGame:
                 'straight_flush': 'Straight Flush',
                 'royal_flush': 'Royal Flush'
             },
-            # เพิ่มประวัติการเดิมพัน
             'bet_history': self.bet_history,
-            # เพิ่มบันทึกการกระทำ
             'action_log': self.action_log
         }
         return state
@@ -708,165 +709,128 @@ class PokerGame:
     
     def ai_move(self, ai_mode=0):
         """Handle AI's move"""
-        if self.game_stage == "showdown" or self.winner:
-            return False
-        
-        if self.current_player_idx != 1:  # AI is player 1
-            return False
-        
-        ai_player = self.players[1]
-        
-        if ai_player.is_folded or ai_player.is_all_in:
-            return False
-        
-        # Get valid actions
         valid_actions = self.get_valid_actions()
         
-        # Use different AI strategies based on mode
-        if ai_mode == 0:  # Simple AI
+        # ปรับความลึกของการค้นหาตามการตั้งค่า
+        search_depth = self.poker_settings.get('search_depth', 5)
+        
+        if ai_mode == 0:
             return self.ai_move_simple(valid_actions)
-        elif ai_mode == 1:  # Probability-based AI
-            return self.ai_move_probability(valid_actions)
-        elif ai_mode == 2:  # Advanced AI with bluffing
-            return self.ai_move_advanced(valid_actions)
+        elif ai_mode == 1:
+            return self.ai_move_probability(valid_actions, search_depth)
         else:
-            return self.ai_move_simple(valid_actions)
+            return self.ai_move_advanced(valid_actions, search_depth)
+    
+    def calculate_game_complexity(self):
+        """คำนวณความซับซ้อนของเกม"""
+        # นับจำนวนชิปที่ยังเหลืออยู่
+        total_chips = sum(player.chips for player in self.players if not player.is_folded)
+        
+        # นับจำนวนผู้เล่นที่ยังเหลืออยู่
+        active_players = len([p for p in self.players if not p.is_folded])
+        
+        # นับจำนวนการเดิมพันที่เกิดขึ้น
+        bet_count = len([h for h in self.bet_history if h['amount'] > 0])
+        
+        # คำนวณความซับซ้อนโดยรวม
+        complexity = (total_chips + bet_count + (10 - active_players)) / 50.0
+        return complexity
     
     def ai_move_simple(self, valid_actions):
         """Simple AI strategy"""
         ai_player = self.players[1]
         hand_strength = self.evaluate_hand_strength(ai_player.hand)
         
-        # Simple thresholds for decisions
-        if hand_strength > 0.7:
-            # Strong hand
-            if "raise" in valid_actions:
-                bet_amount = min(self.current_bet * 2, ai_player.chips)
-                return self.player_action("raise", bet_amount)
-            elif "call" in valid_actions:
-                return self.player_action("call")
-            else:
-                return self.player_action("check")
-        elif hand_strength > 0.4:
-            # Medium hand
-            if "call" in valid_actions and self.current_bet <= ai_player.chips // 5:
-                return self.player_action("call")
-            elif "check" in valid_actions:
-                return self.player_action("check")
-            else:
-                return self.player_action("fold")
+        if random.random() < settings['randomness']:
+            # ทำให้การเคลื่อนที่ของ AI มีความสุ่มบ้าง
+            return random.choice(valid_actions)
+        
+        if hand_strength > 0.7 and 'raise' in valid_actions:
+            return 'raise', min(100, self.current_bet * 2)
+        elif hand_strength > 0.5 and 'call' in valid_actions:
+            return 'call', 0
         else:
-            # Weak hand
-            if "check" in valid_actions:
-                return self.player_action("check")
-            else:
-                return self.player_action("fold")
+            return 'fold', 0
     
-    def ai_move_probability(self, valid_actions):
+    def ai_move_probability(self, valid_actions, search_depth):
         """Probability-based AI strategy"""
         ai_player = self.players[1]
         hand_strength = self.evaluate_hand_strength(ai_player.hand)
         
-        # Calculate pot odds
-        pot_odds = (self.current_bet - ai_player.current_bet) / (self.pot + (self.current_bet - ai_player.current_bet))
+        # คำนวณความน่าจะเป็นของการชนะ
+        win_prob = self.calculate_win_probability(ai_player.hand)
         
-        # Decision making based on pot odds and hand strength
-        if hand_strength > pot_odds * 1.5:
-            # Positive expected value - raise or call
-            if "raise" in valid_actions and hand_strength > 0.6:
-                bet_amount = min(self.current_bet * 2, ai_player.chips)
-                if random.random() < hand_strength:
-                    # Sometimes raise more with stronger hands
-                    bet_amount = min(self.current_bet * 3, ai_player.chips)
-                return self.player_action("raise", bet_amount)
-            elif "call" in valid_actions:
-                return self.player_action("call")
-            else:
-                return self.player_action("check")
-        elif hand_strength > pot_odds:
-            # Borderline call
-            if "call" in valid_actions:
-                return self.player_action("call")
-            else:
-                return self.player_action("check")
-        else:
-            # Negative expected value - check or fold
-            if "check" in valid_actions:
-                return self.player_action("check")
-            else:
-                # Occasionally call anyway (semi-bluff)
-                if random.random() < 0.2 and "call" in valid_actions:
-                    return self.player_action("call")
-                else:
-                    return self.player_action("fold")
+        if random.random() < settings['randomness']:
+            # ทำให้การเคลื่อนที่ของ AI มีความสุ่มบ้าง
+            return random.choice(valid_actions)
+        
+        if win_prob > 0.7 and 'raise' in valid_actions:
+            # ถ้ามีโอกาสชนะสูง ให้เพิ่มเดิมพัน
+            raise_amount = min(100, self.current_bet * 2)
+            if ai_player.chips >= raise_amount:
+                return 'raise', raise_amount
+        
+        if win_prob > 0.5 and 'call' in valid_actions:
+            return 'call', 0
+        
+        return 'fold', 0
     
-    def ai_move_advanced(self, valid_actions):
+    def ai_move_advanced(self, valid_actions, search_depth):
         """Advanced AI strategy with bluffing"""
         ai_player = self.players[1]
         hand_strength = self.evaluate_hand_strength(ai_player.hand)
         
-        # Calculate pot odds
-        pot_odds = (self.current_bet - ai_player.current_bet) / (self.pot + (self.current_bet - ai_player.current_bet)) if self.current_bet > ai_player.current_bet else 0
+        # คำนวณความน่าจะเป็นของการชนะ
+        win_prob = self.calculate_win_probability(ai_player.hand)
         
-        # Track opponent's behavior
-        opponent_aggression = 0.5  # Default: medium aggression
+        # ตรวจสอบสถานการณ์การ bluff
+        if self.game_stage == "pre_flop" and 'raise' in valid_actions:
+            # ลอง bluff ใน pre-flop ถ้ามีโอกาส
+            if random.random() < 0.2:  # 20% โอกาส bluff
+                return 'raise', min(100, self.current_bet * 2)
         
-        # Adjust for game stage
-        stage_multiplier = {
-            "pre_flop": 0.8,
-            "flop": 1.0,
-            "turn": 1.2,
-            "river": 1.5
-        }
-        adjusted_strength = hand_strength * stage_multiplier.get(self.game_stage, 1.0)
+        if random.random() < settings['randomness']:
+            # ทำให้การเคลื่อนที่ของ AI มีความสุ่มบ้าง
+            return random.choice(valid_actions)
         
-        # Bluffing probability based on position and opponent
-        bluff_probability = 0.1
-        if self.game_stage in ["turn", "river"]:
-            bluff_probability = 0.25
+        if win_prob > 0.6 and 'raise' in valid_actions:
+            # ถ้ามีโอกาสชนะสูง ให้เพิ่มเดิมพัน
+            raise_amount = min(100, self.current_bet * 2)
+            if ai_player.chips >= raise_amount:
+                return 'raise', raise_amount
         
-        # Decision making
-        if adjusted_strength > 0.8:
-            # Very strong hand - maximize value
-            if "raise" in valid_actions:
-                # Size bet based on pot and stage
-                if self.game_stage in ["turn", "river"]:
-                    bet_amount = min(self.pot, ai_player.chips)
-                else:
-                    bet_amount = min(self.current_bet * 2.5, ai_player.chips)
-                return self.player_action("raise", bet_amount)
-            else:
-                return self.player_action("call" if "call" in valid_actions else "check")
+        if win_prob > 0.4 and 'call' in valid_actions:
+            return 'call', 0
         
-        elif adjusted_strength > 0.6:
-            # Strong hand
-            if "raise" in valid_actions and random.random() < 0.7:
-                bet_amount = min(self.current_bet * 2, ai_player.chips)
-                return self.player_action("raise", bet_amount)
-            else:
-                return self.player_action("call" if "call" in valid_actions else "check")
+        return 'fold', 0
+    
+    def calculate_win_probability(self, hand):
+        """Calculate probability of winning with current hand"""
+        # ใช้ Monte Carlo simulation เพื่อคำนวณความน่าจะเป็น
+        wins = 0
+        simulations = 100
         
-        elif adjusted_strength > pot_odds * 1.2:
-            # Decent hand with positive expected value
-            if "call" in valid_actions:
-                return self.player_action("call")
-            else:
-                return self.player_action("check")
-        
-        else:
-            # Weak hand - check, fold, or bluff
-            if "check" in valid_actions:
-                return self.player_action("check")
+        for _ in range(simulations):
+            # สร้างสำรับไพ่ใหม่
+            sim_deck = Deck()
+            sim_deck.shuffle()
             
-            # Consider bluffing
-            elif random.random() < bluff_probability:
-                if "raise" in valid_actions:
-                    bet_amount = min(self.current_bet * 2, ai_player.chips)
-                    return self.player_action("raise", bet_amount)
-                else:
-                    return self.player_action("call")
-            else:
-                return self.player_action("fold")
+            # แจกไพ่ให้คู่แข่ง
+            opponent_hand = PokerHand()
+            opponent_hand.add_card(sim_deck.deal())
+            opponent_hand.add_card(sim_deck.deal())
+            
+            # แจกไพ่ community
+            sim_community = self.community_cards[:]
+            while len(sim_community) < 5:
+                sim_community.append(sim_deck.deal())
+            
+            # เปรียบเทียบมือ
+            result = hand.compare_with(opponent_hand, sim_community)
+            if result > 0:
+                wins += 1
+        
+        return wins / simulations
     
     def evaluate_hand_strength(self, hand):
         """Evaluate the strength of a hand (0-1 scale)"""
@@ -934,6 +898,27 @@ class PokerGame:
         
         # Cap strength
         return min(max(strength, 0), 1)
+
+class GameSettings:
+    def __init__(self):
+        self.settings = {
+            'poker': {
+                'search_depth': 5,
+                'randomness': 0.1,
+                'ai_delay': 0.5
+            }
+        }
+    
+    def adjust_settings(self, game_type):
+        return self.settings.get(game_type, {})
+    
+    def get_poker_settings(self):
+        return self.settings.get('poker', {})
+    
+    def calculate_thinking_time(self, game_type, move_count, complexity):
+        # คำนวณเวลาคิดตามจำนวนการเคลื่อนไหวและความซับซ้อนของเกม
+        thinking_time = 0.5 + (move_count * 0.1) + (complexity * 0.2)
+        return thinking_time
 
 # สร้างฟังก์ชันเพื่อแสดงเกมในรูปแบบกราฟิก
 def display_game(game_state):
