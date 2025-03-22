@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four - Zombitx64</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .board {
+            background-color: #0066cc;
+            border-radius: 10px;
+            padding: 15px;
+            display: inline-block;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        
+        .column {
+            display: inline-block;
+            vertical-align: top;
+        }
+        
+        .column-hover {
+            height: 20px;
+            width: 60px;
+            margin: 0 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .column-hover.highlight {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: #0066cc;
+            border-radius: 50%;
+            margin: 5px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cell::after {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        
+        .cell.red::after {
+            background-color: #ff3333;
+        }
+        
+        .cell.yellow::after {
+            background-color: #ffcc00;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0055aa;
+        }
+        
+        .status {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .ai-selector {
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            margin-top: 30px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        
+        .stats h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .stats table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .stats th, .stats td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .winner-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .winner-message {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+        }
+        
+        .winner-message h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .winner-buttons {
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .cell {
+                width: 40px;
+                height: 40px;
+                margin: 3px;
+            }
+            
+            .column-hover {
+                width: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Connect Four - Zombitx64</h1>
+    
+    <div class="game-container">
+        <div class="ai-selector">
+            <label for="ai-mode">AI Algorithm:</label>
+            <select id="ai-mode">
+                <option value="0">Minimax</option>
+                <option value="1">Pattern Recognition</option>
+                <option value="2">Q-Learning</option>
+                <option value="3">Neural Network</option>
+                <option value="4">MCTS</option>
+                <option value="5">Genetic Algorithm</option>
+            </select>
+        </div>
+        
+        <div class="status">Your turn! Pick a column to drop a disc.</div>
+        
+        <div class="board-container">
+            <div id="column-hovers">
+                <!-- Column hover indicators will be added here -->
+            </div>
+            <div class="board" id="game-board">
+                <!-- Game board will be generated here -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game">New Game</button>
+            <button id="change-ai">Change AI</button>
+            <button id="back-to-menu">Back to Menu</button>
+        </div>
+        
+        <div class="stats">
+            <h2>Game Statistics</h2>
+            <table>
+                <tr>
+                    <td>Total Games:</td>
+                    <td id="total-games">0</td>
+                </tr>
+                <tr>
+                    <td>Player Wins:</td>
+                    <td id="player-wins">0</td>
+                </tr>
+                <tr>
+                    <td>AI Wins:</td>
+                    <td id="ai-wins">0</td>
+                </tr>
+                <tr>
+                    <td>Draws:</td>
+                    <td id="draws">0</td>
+                </tr>
+                <tr>
+                    <td>Win Rate:</td>
+                    <td id="win-rate">0%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="winner-overlay" id="winner-overlay">
+        <div class="winner-message">
+            <h2 id="winner-text">You Win!</h2>
+            <div class="winner-buttons">
+                <button id="play-again">Play Again</button>
+                <button id="return-to-menu">Return to Menu</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/connect_four.js"></script>
+</body>
+</html>

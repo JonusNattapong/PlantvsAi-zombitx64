@@ -3,118 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe with AI</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>เกมอัจฉริยะกับ AI - Zombitx64</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: 'Kanit', 'Prompt', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('/static/circuit-pattern.svg');
+            opacity: 0.1;
+            pointer-events: none;
+        }
+        
+        .hero h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+            font-size: 2rem;
+            color: #2c5364;
+            position: relative;
+        }
+        
+        .section-title::after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #2c5364, #0f2027);
+            border-radius: 2px;
+        }
+        
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .game-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        
+        .game-image {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+            border-bottom: 3px solid #f0f0f0;
+        }
+        
+        .game-content {
+            padding: 20px;
+        }
+        
+        .game-title {
+            font-size: 1.5rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c5364;
+        }
+        
+        .game-description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .ai-section {
+            background-color: white;
+            padding: 40px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            margin-bottom: 60px;
+        }
+        
+        .ai-algorithms {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .ai-algorithm {
+            background-color: #f0f5f9;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .ai-algorithm:hover {
+            background-color: #e0eaf5;
+        }
+        
+        .ai-algorithm.selected {
+            background-color: #2c5364;
+            color: white;
+            border-color: #2c5364;
+            box-shadow: 0 3px 8px rgba(44, 83, 100, 0.3);
+        }
+        
+        .start-btn {
+            display: block;
+            width: 200px;
+            margin: 0 auto;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #2c5364, #0f2027);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(44, 83, 100, 0.4);
+        }
+        
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        
+        .stats-table th,
+        .stats-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .stats-table th {
+            background-color: #f5f7fa;
+            font-weight: 600;
+            color: #2c5364;
+        }
+        
+        .stats-table tr:hover {
+            background-color: #f9fafc;
+        }
+        
+        .stats-section {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .footer {
+            background: #0f2027;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+        }
+        
+        .footer p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .game-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .ai-algorithm {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Welcome Screen -->
-        <div id="welcome-screen" class="screen active">
-            <div class="gradient-background"></div>
-            <div class="container">
-                <h1 class="title">Tic Tac Toe <span>with AI</span></h1>
-                
-                <div class="stats-container">
-                    <h2>Game Statistics</h2>
-                    <div class="stats-grid">
-                        <div class="stat-box">
-                            <div class="stat-value" id="total-games">0</div>
-                            <div class="stat-label">Games Played</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="player-wins">0</div>
-                            <div class="stat-label">Player Wins</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="win-rate">0%</div>
-                            <div class="stat-label">Win Rate</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ai-selection">
-                    <h2>Choose AI Mode</h2>
-                    <div class="ai-buttons">
-                        <button class="ai-btn selected" data-mode="0">Minimax</button>
-                        <button class="ai-btn" data-mode="1">Pattern Recognition</button>
-                    </div>
-                </div>
-                
-                <button id="start-game-btn" class="action-btn">Start Game</button>
-            </div>
-        </div>
+    <div class="hero">
+        <h1>เกมอัจฉริยะกับ AI</h1>
+        <p>สัมผัสประสบการณ์เล่นเกมกระดานคลาสสิกกับปัญญาประดิษฐ์ที่ใช้อัลกอริทึมชั้นสูงหลากหลายรูปแบบ</p>
+    </div>
+
+    <div class="container">
+        <h2 class="section-title">เลือกเกมที่ต้องการเล่น</h2>
         
-        <!-- Game Screen -->
-        <div id="game-screen" class="screen">
-            <div class="game-container">
-                <div class="game-header">
-                    <button id="back-to-menu" class="icon-btn">
-                        <i class="fas fa-arrow-left"></i> Menu
-                    </button>
-                    <div class="current-mode">
-                        AI Mode: <span id="current-ai-mode">Minimax</span>
-                    </div>
+        <div class="game-grid">
+            <div class="game-card" id="tictactoe-card">
+                <img src="/static/tictactoe-preview.jpg" alt="Tic Tac Toe" class="game-image">
+                <div class="game-content">
+                    <h3 class="game-title">Tic Tac Toe</h3>
+                    <p class="game-description">เกมโอเอกซ์คลาสสิกบนตาราง 3x3 ทดสอบกลยุทธ์ของคุณกับ AI ที่ชาญฉลาด</p>
                 </div>
-                
-                <div id="board-container">
-                    <div id="game-board">
-                        <!-- Board cells will be generated by JavaScript -->
-                    </div>
+            </div>
+            
+            <div class="game-card" id="connect-four-card">
+                <img src="/static/connect-four-preview.jpg" alt="Connect Four" class="game-image">
+                <div class="game-content">
+                    <h3 class="game-title">Connect Four</h3>
+                    <p class="game-description">เรียงเบี้ยให้ได้ 4 ตัวในแนวตั้ง แนวนอน หรือแนวทแยงก่อน AI</p>
                 </div>
-                
-                <div class="game-stats-panel">
-                    <h2>Game Statistics</h2>
-                    
-                    <div class="stats-grid game-stats">
-                        <div class="stat-box">
-                            <div class="stat-value" id="mode-games">0</div>
-                            <div class="stat-label">Games</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="mode-player-wins">0</div>
-                            <div class="stat-label">Player Wins</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="mode-ai-wins">0</div>
-                            <div class="stat-label">AI Wins</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value" id="mode-draws">0</div>
-                            <div class="stat-label">Draws</div>
-                        </div>
-                    </div>
-                    
-                    <div id="results-btn-container">
-                        <button id="show-results-btn" class="action-btn" disabled>Show Results</button>
-                    </div>
-                    
-                    <div class="ai-mode-selector">
-                        <div class="mode-label">AI Mode:</div>
-                        <div class="mode-buttons">
-                            <button class="mode-btn selected" data-mode="0">Minimax</button>
-                            <button class="mode-btn" data-mode="1">Pattern Recognition</button>
-                        </div>
-                    </div>
+            </div>
+            
+            <div class="game-card" id="checkers-card">
+                <img src="/static/checkers-preview.jpg" alt="Checkers" class="game-image">
+                <div class="game-content">
+                    <h3 class="game-title">หมากฮอต</h3>
+                    <p class="game-description">เกมกระดานกลยุทธ์แบบไทยที่ต้องกินหมากของฝ่ายตรงข้าม และเลื่อนขั้นเป็นราชัน</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Game Over Overlay -->
-        <div id="game-over-overlay" class="overlay hidden">
-            <div class="result-card">
-                <div id="result-accent-bar"></div>
-                <h2 id="result-text">You Win!</h2>
-                <p>Press 'R' to play again</p>
-                <p>Press 'ESC' for menu</p>
-                <div class="overlay-buttons">
-                    <button id="play-again-btn" class="action-btn">Play Again</button>
-                    <button id="overlay-menu-btn" class="action-btn secondary">Menu</button>
-                </div>
+
+        <div class="ai-section">
+            <h2 class="section-title">เลือกอัลกอริทึม AI</h2>
+            <div class="ai-algorithms">
+                <div class="ai-algorithm selected" data-algorithm="0">Minimax</div>
+                <div class="ai-algorithm" data-algorithm="1">Pattern Recognition</div>
+                <div class="ai-algorithm" data-algorithm="2">Q-Learning</div>
+                <div class="ai-algorithm" data-algorithm="3">Neural Network</div>
+                <div class="ai-algorithm" data-algorithm="4">MCTS</div>
+                <div class="ai-algorithm" data-algorithm="5">Genetic Algorithm</div>
             </div>
+            <button class="start-btn" id="start-game">เริ่มเกม</button>
+        </div>
+
+        <div class="stats-section">
+            <h2 class="section-title">สถิติการเล่น</h2>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>เกม</th>
+                        <th>เกมทั้งหมด</th>
+                        <th>ผู้เล่นชนะ</th>
+                        <th>AI ชนะ</th>
+                        <th>เสมอ</th>
+                        <th>อัตราการชนะ</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-table">
+                    <tr id="tictactoe-stats">
+                        <td>Tic Tac Toe</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0%</td>
+                    </tr>
+                    <tr id="connect-four-stats">
+                        <td>Connect Four</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0%</td>
+                    </tr>
+                    <tr id="checkers-stats">
+                        <td>หมากฮอต</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>0%</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-    
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    <footer class="footer">
+        <p>© 2023 Zombitx64 AI Board Games | โครงงานพัฒนาเกมกับ AI</p>
+    </footer>
+
+    <script>
+        // ตัวแปรเก็บการเลือกเกมและ AI
+        let selectedGame = 'TicTacToe'; // ค่าเริ่มต้น
+        let selectedAiAlgorithm = '0'; // ค่าเริ่มต้น (Minimax)
+
+        // DOM elements
+        const ticTacToeCard = document.getElementById('tictactoe-card');
+        const connectFourCard = document.getElementById('connect-four-card');
+        const checkersCard = document.getElementById('checkers-card');
+        const aiAlgorithms = document.querySelectorAll('.ai-algorithm');
+        const startGameBtn = document.getElementById('start-game');
+
+        // เลือกการ์ดเกม
+        ticTacToeCard.addEventListener('click', () => {
+            selectedGame = 'TicTacToe';
+            highlightCard(ticTacToeCard);
+            unhighlightCard(connectFourCard);
+            unhighlightCard(checkersCard);
+        });
+
+        connectFourCard.addEventListener('click', () => {
+            selectedGame = 'ConnectFour';
+            highlightCard(connectFourCard);
+            unhighlightCard(ticTacToeCard);
+            unhighlightCard(checkersCard);
+        });
+        
+        checkersCard.addEventListener('click', () => {
+            selectedGame = 'Checkers';
+            highlightCard(checkersCard);
+            unhighlightCard(ticTacToeCard);
+            unhighlightCard(connectFourCard);
+        });
+
+        // ฟังก์ชันไฮไลต์การ์ด
+        function highlightCard(card) {
+            card.style.borderColor = '#2c5364';
+            card.style.borderWidth = '3px';
+            card.style.borderStyle = 'solid';
+        }
+        
+        // ฟังก์ชันยกเลิกไฮไลต์การ์ด
+        function unhighlightCard(card) {
+            card.style.border = 'none';
+        }
+
+        // เลือก AI algorithm
+        aiAlgorithms.forEach(algorithm => {
+            algorithm.addEventListener('click', () => {
+                // ลบคลาส selected จากทุก algorithms
+                aiAlgorithms.forEach(alg => {
+                    alg.classList.remove('selected');
+                });
+                
+                // เพิ่มคลาส selected ให้กับ algorithm ที่ถูกคลิก
+                algorithm.classList.add('selected');
+                selectedAiAlgorithm = algorithm.dataset.algorithm;
+            });
+        });
+
+        // ปุ่มเริ่มเกม
+        startGameBtn.addEventListener('click', () => {
+            if (selectedGame === 'TicTacToe') {
+                window.location.href = `/tictactoe?ai=${selectedAiAlgorithm}`;
+            } else if (selectedGame === 'ConnectFour') {
+                window.location.href = `/connect_four?ai=${selectedAiAlgorithm}`;
+            } else if (selectedGame === 'Checkers') {
+                window.location.href = `/checkers?ai=${selectedAiAlgorithm}`;
+            }
+        });
+
+        // โหลดสถิติเกม
+        async function loadGameStats() {
+            try {
+                // โหลดสถิติ Tic Tac Toe
+                const ticTacToeResponse = await fetch('/api/get_stats?game_type=TicTacToe');
+                const ticTacToeStats = await ticTacToeResponse.json();
+                updateStatsRow('tictactoe-stats', ticTacToeStats);
+                
+                // โหลดสถิติ Connect Four
+                const connectFourResponse = await fetch('/api/get_stats?game_type=ConnectFour');
+                const connectFourStats = await connectFourResponse.json();
+                updateStatsRow('connect-four-stats', connectFourStats);
+                
+                // โหลดสถิติ Checkers
+                const checkersResponse = await fetch('/api/get_stats?game_type=Checkers');
+                const checkersStats = await checkersResponse.json();
+                updateStatsRow('checkers-stats', checkersStats);
+            } catch (error) {
+                console.error('Error loading game stats:', error);
+            }
+        }
+
+        function updateStatsRow(rowId, stats) {
+            const row = document.getElementById(rowId);
+            if (row && stats) {
+                row.cells[1].textContent = stats.total_games;
+                row.cells[2].textContent = stats.player_wins;
+                row.cells[3].textContent = stats.ai_wins;
+                row.cells[4].textContent = stats.draws;
+                row.cells[5].textContent = stats.win_rate + '%';
+            }
+        }
+
+        // โหลดสถิติเมื่อหน้าเว็บโหลดเสร็จ
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGameStats();
+            
+            // ไฮไลต์การ์ดเกมเริ่มต้น (TicTacToe)
+            highlightCard(ticTacToeCard);
+        });
+        
+        // เอฟเฟกต์เมื่อ hover บนการ์ด
+        const gameCards = document.querySelectorAll('.game-card');
+        gameCards.forEach(card => {
+            card.addEventListener('mouseover', () => {
+                card.querySelector('.game-title').style.color = '#0f2027';
+            });
+            
+            card.addEventListener('mouseout', () => {
+                card.querySelector('.game-title').style.color = '#2c5364';
+            });
+        });
+    </script>
 </body>
 </html>

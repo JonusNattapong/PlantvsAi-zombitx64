@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>หมากฮอต - Zombitx64</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        h1 {
+            color: #222;
+            margin-bottom: 30px;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .board-wrapper {
+            position: relative;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .checkers-board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 8px solid #654321;
+            border-radius: 5px;
+            box-sizing: content-box;
+        }
+        
+        .square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .square.light {
+            background-color: #f0d9b5;
+        }
+        
+        .square.dark {
+            background-color: #b58863;
+            cursor: pointer;
+        }
+        
+        .square.selected {
+            background-color: #8aac71;
+        }
+        
+        .square.valid-move {
+            position: relative;
+        }
+        
+        .square.valid-move::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0, 255, 0, 0.4);
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .piece {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease-in-out;
+            z-index: 2;
+        }
+        
+        .piece.player {
+            background-color: #fff;
+        }
+        
+        .piece.ai {
+            background-color: #333;
+        }
+        
+        .piece.king::after {
+            content: "♔";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: gold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        .piece.player.king::after {
+            color: gold;
+        }
+        
+        .piece.ai.king::after {
+            color: #ff9800;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3a506b;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #284b63;
+        }
+        
+        .status {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #444;
+        }
+        
+        .ai-selector {
+            margin-bottom: 20px;
+        }
+        
+        .ai-selector select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .stats {
+            margin-top: 40px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .stats h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        
+        .stats table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .stats th, .stats td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .winner-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .winner-message {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .winner-message h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .winner-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .checkers-board {
+                grid-template-columns: repeat(8, 40px);
+                grid-template-rows: repeat(8, 40px);
+            }
+            
+            .square {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .piece {
+                width: 34px;
+                height: 34px;
+            }
+            
+            .piece.king::after {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>หมากฮอต - Zombitx64</h1>
+    
+    <div class="game-container">
+        <div class="ai-selector">
+            <label for="ai-mode">อัลกอริทึม AI:</label>
+            <select id="ai-mode">
+                <option value="0">Minimax</option>
+                <option value="1">Pattern Recognition</option>
+                <option value="2">Q-Learning</option>
+                <option value="3">Neural Network</option>
+                <option value="4">MCTS</option>
+                <option value="5">Genetic Algorithm</option>
+            </select>
+        </div>
+        
+        <div class="status" id="game-status">ตาของคุณ! เลือกหมากที่ต้องการเคลื่อนย้าย</div>
+        
+        <div class="board-wrapper">
+            <div class="checkers-board" id="checkers-board">
+                <!-- กระดานหมากฮอตจะถูกสร้างด้วย JavaScript -->
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">เริ่มเกมใหม่</button>
+            <button id="change-ai-btn">เปลี่ยน AI</button>
+            <button id="back-to-menu-btn">กลับไปยังเมนูหลัก</button>
+        </div>
+        
+        <div class="stats">
+            <h2>สถิติเกม</h2>
+            <table>
+                <tr>
+                    <td>เกมทั้งหมด:</td>
+                    <td id="total-games">0</td>
+                </tr>
+                <tr>
+                    <td>ผู้เล่นชนะ:</td>
+                    <td id="player-wins">0</td>
+                </tr>
+                <tr>
+                    <td>AI ชนะ:</td>
+                    <td id="ai-wins">0</td>
+                </tr>
+                <tr>
+                    <td>เสมอ:</td>
+                    <td id="draws">0</td>
+                </tr>
+                <tr>
+                    <td>อัตราการชนะ:</td>
+                    <td id="win-rate">0%</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="winner-overlay" id="winner-overlay">
+        <div class="winner-message">
+            <h2 id="winner-text">คุณชนะ!</h2>
+            <div class="winner-buttons">
+                <button id="play-again-btn">เล่นอีกครั้ง</button>
+                <button id="return-to-menu-btn">กลับไปเมนูหลัก</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/checkers.js"></script>
+</body>
+</html>
