@@ -94,55 +94,66 @@ ZomPokerX64 เป็นโมเดล AI ขั้นสูงที่พั�
 ## Workflow Diagram ของเกม Poker
 
 ```mermaid
-mindmap
-  root((Poker Game Flow))
-    ((เริ่มเกม))
-      [จัดการชิป]
-      [แจกไพ่]
-      [กำหนดผู้เล่นเริ่มต้น]
-    ((Gameplay Loop))
-      [Pre-Flop<br>ไพ่ในมือ)]
-        (Small Blind)
-        (Big Blind)
-        (การเดิมพัน)
-      [Flop<br>ไพ่กลาง 3 ใบ]
-        (การเดิมพัน)
-      [Turn<br>ไพ่กลางใบที่ 4]
-        (การเดิมพัน)
-      [River<br>ไพ่กลางใบที่ 5]
-        (การเดิมพัน)
-      [Showdown<br>เปิดไพ่]
-        (คำนวณผู้ชนะ)
-        (จ่ายชิป)
-    ((AI Decision Making))
-      [ZomPokerX64 AI]
-        (Neural Networks)
-        (ข้อมูลสถานะเกม)
-        (Monte Carlo Simulation)
-        (Opponent Modeling)
-      [Rule-based AI]
-        (กฎพื้นฐาน)
-        (Hand Strength)
-        (Pot Odds)
-        (Position)
-      [Actions]
-        (Fold)
-        (Check)
-        (Call)
-        (Raise)
-    ((การสื่อสาร Frontend-Backend))
-      [Frontend<br>JavaScript]
-        (แสดงผลไพ่)
-        (เสียงเอฟเฟกต์)
-        (UI Controls)
-      [Backend<br>Flask]
-        (Game Logic)
-        (AI)
-        (State Management)
-      [API]
-        (AJAX/Fetch)
-        (WebSocket)
-        (JSON Responses)
+graph TD
+    A[Poker Game Flow] --> B[เริ่มเกม]
+    A --> C[Game Loop]
+    A --> D[AI Decision]
+    A --> E[Frontend-Backend]
+    
+    B --> B1[จัดการชิป]
+    B --> B2[แจกไพ่]
+    B --> B3[กำหนดผู้เล่นเริ่มต้น]
+    
+    C --> C1[Pre-Flop]
+    C1 --> C1a[Small Blind]
+    C1 --> C1b[Big Blind]
+    C1 --> C1c[การเดิมพัน]
+    
+    C --> C2[Flop]
+    C2 --> C2a[การเดิมพัน]
+    
+    C --> C3[Turn]
+    C3 --> C3a[การเดิมพัน]
+    
+    C --> C4[River]
+    C4 --> C4a[การเดิมพัน]
+    
+    C --> C5[Showdown]
+    C5 --> C5a[คำนวณผู้ชนะ]
+    C5 --> C5b[จ่ายชิป]
+    
+    D --> D1[ZomPokerX64 AI]
+    D1 --> D1a[Neural Networks]
+    D1 --> D1b[ข้อมูลสถานะเกม]
+    D1 --> D1c[Monte Carlo Simulation]
+    D1 --> D1d[Opponent Modeling]
+    
+    D --> D2[Rule-based AI]
+    D2 --> D2a[กฎพื้นฐาน]
+    D2 --> D2b[Hand Strength]
+    D2 --> D2c[Pot Odds]
+    D2 --> D2d[Position]
+    
+    D --> D3[Actions]
+    D3 --> D3a[Fold]
+    D3 --> D3b[Check]
+    D3 --> D3c[Call]
+    D3 --> D3d[Raise]
+    
+    E --> E1[Frontend JavaScript]
+    E1 --> E1a[แสดงผลไพ่]
+    E1 --> E1b[เสียงเอฟเฟกต์]
+    E1 --> E1c[UI Controls]
+    
+    E --> E2[Backend Flask]
+    E2 --> E2a[Game Logic]
+    E2 --> E2b[AI]
+    E2 --> E2c[State Management]
+    
+    E --> E3[API]
+    E3 --> E3a[AJAX/Fetch]
+    E3 --> E3b[WebSocket]
+    E3 --> E3c[JSON Responses]
 ```
 
 ## การทำงานของระบบ
@@ -150,58 +161,89 @@ mindmap
 ### Frontend-Backend Communication Flow
 
 ```mermaid
-mindmap
-  root((Frontend-Backend<br>Communication))
-    ((Player Action))
-      [1. ผู้เล่นเลือกการกระทำ]
-      [2. ส่งข้อมูลด้วย Fetch API]
-      [3. Backend รับข้อมูล<br>และประมวลผล]
-      [4. ปรับปรุงข้อมูลเกม]
-    ((AI Response))
-      [5. Backend ถามการตัดสินใจ<br>จาก ZomPokerX64]
-      [6. AI ใช้ Neural Network<br>วิเคราะห์สถานการณ์]
-      [7. AI ส่งการตัดสินใจ<br>กลับไปยัง Backend]
-      [8. Backend ปรับปรุง<br>สถานะเกม]
-    ((Update UI))
-      [9. ส่งข้อมูลกลับ<br>เป็น JSON]
-      [10. Frontend รับข้อมูล<br>และแสดงผล]
-      [11. อัปเดตการแสดงไพ่<br>และเล่นเสียงเอฟเฟกต์]
-      [12. รอการกระทำ<br>ต่อไปของผู้เล่น]
+sequenceDiagram
+    participant Player as ผู้เล่น
+    participant Frontend as Frontend Interface
+    participant Backend as Backend Server
+    participant AI as ZomPokerX64 AI
+
+    Player->>Frontend: เลือกการกระทำ (Check/Call/Raise/Fold)
+    Frontend->>Backend: ส่งข้อมูลด้วย Fetch API
+    Backend->>Backend: ประมวลผลการกระทำของผู้เล่น
+    Backend->>Backend: ปรับปรุงสถานะเกม
+    
+    alt ถึงตา AI
+        Backend->>AI: ขอการตัดสินใจ
+        AI->>AI: วิเคราะห์สถานการณ์ด้วย Neural Network
+        AI->>Backend: ส่งการตัดสินใจ
+        Backend->>Backend: ประมวลผลการกระทำของ AI
+    end
+    
+    Backend->>Frontend: ส่งข้อมูลสถานะเกมกลับ (JSON)
+    Frontend->>Frontend: อัปเดตการแสดงไพ่
+    Frontend->>Frontend: เล่นเสียงเอฟเฟกต์
+    Frontend->>Player: แสดงผลให้ผู้เล่นเห็น
 ```
 
 ### ZomPokerX64 AI Architecture
 
 ```mermaid
-mindmap
-  root((ZomPokerX64<br>AI Architecture))
-    ((Input Features))
-      [Hand Strength]
-      [Community Cards]
-      [Betting History]
-      [Stack Sizes]
-      [Position]
-      [Pot Odds]
-    ((Preprocessing))
-      [Feature Extraction]
-      [Normalization]
-      [Encoding]
-    ((Machine Learning Models))
-      [Neural Networks]
-        (Dense Layers)
-        (LSTM Layers)
-      [Random Forest]
-      [Decision Trees]
-    ((Decision Process))
-      [Calculate Probabilities<br>for Actions]
-      [Monte Carlo<br>Simulation]
-      [Opponent Model<br>Analysis]
-      [Adjusting for<br>Risk/Reward]
-    ((Output Actions))
-      [Fold]
-      [Check]
-      [Call]
-      [Raise]
-        (Determine<br>Raise Amount)
+graph TB
+    Input[Input Features] --> Preprocess[Preprocessing]
+    
+    subgraph Features
+    F1[Hand Strength]
+    F2[Community Cards]
+    F3[Betting History]
+    F4[Stack Sizes]
+    F5[Position]
+    F6[Pot Odds]
+    end
+    
+    Features --> Input
+    
+    subgraph Preprocessing Steps
+    P1[Feature Extraction]
+    P2[Normalization]
+    P3[Encoding]
+    end
+    
+    Preprocess --> P1
+    Preprocess --> P2
+    Preprocess --> P3
+    
+    P1 & P2 & P3 --> Models
+    
+    subgraph Models
+    M1[Neural Networks]
+    M2[Random Forest]
+    M3[Decision Trees]
+    end
+    
+    Models --> Decision
+    
+    subgraph Decision Process
+    D1[Calculate Action Probabilities]
+    D2[Monte Carlo Simulation]
+    D3[Opponent Model Analysis]
+    D4[Risk/Reward Adjustment]
+    end
+    
+    Decision --> D1
+    Decision --> D2
+    Decision --> D3
+    Decision --> D4
+    
+    D1 & D2 & D3 & D4 --> Actions
+    
+    subgraph Actions
+    A1[Fold]
+    A2[Check]
+    A3[Call]
+    A4[Raise]
+    end
+    
+    A4 --> RaiseCalc[Determine Raise Amount]
 ```
 
 ## License
