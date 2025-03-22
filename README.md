@@ -1,76 +1,98 @@
-# Tictactoe-zombitx64
+# เกม Tic Tac Toe - Zombitx64
 
-A Tic-tac-toe game with multiple AI opponent strategies implemented in both desktop (Pygame) and web application versions.
+เกม Tic Tac Toe ที่มีการใช้กลยุทธ์ AI หลากหลายรูปแบบเพื่อเป็นคู่แข่งกับผู้เล่น โดยมีทั้งเวอร์ชันเดสก์ท็อป (Pygame) และเว็บแอปพลิเคชัน
 
-## Video on YouTube
+## วิดีโอบน YouTube
 
 [![Video](https://img.youtube.com/vi/L88agPTTn9M/0.jpg)](https://www.youtube.com/watch?v=L88agPTTn9M)
 
-## Features
+## คุณสมบัติของเกม
 
-- Interactive 3x3 Tic-tac-toe board
-- Player vs AI gameplay 
-- Two different AI strategies:
-  1. **Minimax Algorithm**: Traditional unbeatable algorithm
-  2. **Pattern Recognition**: Analyzes and adapts to player patterns
-- Game statistics tracking
-- Real-time performance analysis
-- Strategy switching during gameplay
-- Modern user interface
+- กระดาน Tic Tac Toe ขนาด 3x3 ที่สามารถเล่นได้อย่างโต้ตอบ
+- การแข่งขันระหว่างผู้เล่นและ AI
+- กลยุทธ์ AI สองรูปแบบ:
+  1. **อัลกอริทึม Minimax**: อัลกอริทึมที่ไม่สามารถเอาชนะได้
+  2. **การจดจำรูปแบบ (Pattern Recognition)**: วิเคราะห์และปรับตัวตามรูปแบบการเล่นของผู้เล่น
+- การติดตามสถิติการเล่น
+- การวิเคราะห์ประสิทธิภาพแบบเรียลไทม์
+- การสลับกลยุทธ์ระหว่างการเล่น
+- อินเตอร์เฟซที่ทันสมัย
 
-## Static
+## การเรียนรู้เชิงลึก
 
-![Screenshot](./static/image1.png)
+### อัลกอริทึม Minimax
 
-![Screenshot](./static/image.png)
+อัลกอริทึม Minimax เป็นเทคนิคการค้นหาในทฤษฎีเกมที่ใช้ในการตัดสินใจที่ดีที่สุดในเกมที่มีผู้เล่นสองคน โดยการประเมินผลลัพธ์ที่เป็นไปได้ทั้งหมดของการเคลื่อนไหวในอนาคต และเลือกการเคลื่อนไหวที่ให้ผลลัพธ์ที่ดีที่สุดสำหรับผู้เล่นที่กำลังตัดสินใจ
 
-## System Architecture
+- **การค้นหาต้นไม้เกม**: Minimax จะสร้างต้นไม้เกมที่แสดงถึงทุกสถานะที่เป็นไปได้ของเกม
+- **การประเมินค่าของโหนด**: แต่ละโหนดในต้นไม้จะถูกประเมินค่าเพื่อเลือกการเคลื่อนไหวที่ดีที่สุด
+- **การตัดสินใจเชิงกลยุทธ์**: เลือกการเคลื่อนไหวที่ลดโอกาสของคู่แข่งในการชนะ
 
-### Desktop Version Architecture
+### การจดจำรูปแบบ (Pattern Recognition)
+
+การจดจำรูปแบบในเกม Tic Tac Toe เป็นการใช้ AI เพื่อวิเคราะห์รูปแบบการเล่นของผู้เล่นและปรับกลยุทธ์ของ AI ให้เหมาะสม
+
+- **การวิเคราะห์รูปแบบ**: AI จะบันทึกการเคลื่อนไหวของผู้เล่นและสร้างฐานข้อมูลของรูปแบบการเล่น
+- **การปรับตัวตามผู้เล่น**: AI จะปรับกลยุทธ์ตามรูปแบบที่พบ เพื่อเพิ่มโอกาสในการชนะ
+- **การเรียนรู้จากประสบการณ์**: AI จะเรียนรู้และปรับปรุงกลยุทธ์อย่างต่อเนื่องจากเกมที่เล่นในอดีต
+
+## ภาพหน้าจอ
+
+### เวอร์ชันเว็บ
+![ภาพหน้าจอของเว็บแอปพลิเคชัน](static/image1.png)
+*อินเตอร์เฟซเว็บที่ทันสมัยและการแสดงผลลัพธ์อัตโนมัติ*
+
+### เวอร์ชันเดสก์ท็อป
+![ภาพหน้าจอของแอปพลิเคชันเดสก์ท็อป](static/image.png)
+*อินเตอร์เฟซแบบคลาสสิกที่สร้างด้วย Pygame*
+
+## สถาปัตยกรรมระบบ
+
+### สถาปัตยกรรมเวอร์ชันเดสก์ท็อป
 ```
 +------------------+     +-------------------+     +------------------+
 |                  |     |                   |     |                  |
-|   User Input     +---->+   Game Logic      +---->+   Pygame UI     |
-|   (Mouse/Kbd)    |     |   (tictactoe.py)  |     |   Rendering     |
+|   การรับข้อมูล   +---->+   โลจิกเกม       +---->+   อินเตอร์เฟซ  |
+|   จากผู้ใช้     |     |   (tictactoe.py)  |     |   Pygame        |
 |                  |     |                   |     |                  |
 +------------------+     +---------+---------+     +------------------+
                                    |
                                    v
                          +---------+---------+
                          |                   |
-                         |   AI Strategies   |
-                         |   - Minimax       |
-                         |   - Pattern Rec.  |
+                         |   กลยุทธ์ AI     |
+                         |   - Minimax      |
+                         |   - การจดจำรูปแบบ|
                          |                   |
                          +---------+---------+
                                    |
                                    v
                          +---------+---------+
                          |                   |
-                         |   Game Stats &    |
-                         |   Pattern Storage |
-                         |   (JSON Files)    |
+                         |   สถิติเกม &    |
+                         |   การจัดเก็บรูปแบบ|
+                         |   (ไฟล์ JSON)    |
                          |                   |
                          +-------------------+
 ```
 
-### Web Version Architecture
+### สถาปัตยกรรมเวอร์ชันเว็บ
 ```
-  Client (Browser)                            Server (Flask)
+  Client (เว็บเบราว์เซอร์)                            Server (Flask)
 +------------------+     HTTP     +---------------------------+
 |                  |  Requests/   |                           |
 |  HTML/CSS/JS     +------------->+  Flask Web Server         |
-|  (frontend)      |  Responses   |  (app.py)                 |
+|  (ส่วนหน้า)      |  Responses   |  (app.py)                 |
 |                  |<-------------+                           |
 +-------+----------+              +-------------+-------------+
         |                                       |
-        | User                                  |
-        | Interaction                           |
+        | การโต้ตอบผู้ใช้                       |
+        |                                        |
         v                                       v
 +-------+----------+              +-------------+-------------+
 |                  |     API      |                           |
-|  JavaScript      +------------->+  Game Logic &             |
-|  Game Controller |  Endpoints   |  AI Strategy Controller   |
+|  JavaScript      +------------->+  โลจิกเกม &              |
+|  คอนโทรลเลอร์   |  Endpoints   |  คอนโทรลเลอร์กลยุทธ์ AI|
 |                  |<-------------+                           |
 +------------------+              +-------------+-------------+
                                               |
@@ -78,143 +100,145 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented in both desk
                                               v
                                   +-----------+------------+
                                   |                        |
-                                  |  Game Stats & Pattern  |
-                                  |  Storage (JSON Files)  |
+                                  |  สถิติเกม & รูปแบบ  |
+                                  |  (ไฟล์ JSON)        |
                                   |                        |
                                   +------------------------+
 ```
 
-## Game Workflow
+## การทำงานของเกม
 
-### Desktop Version Workflow
-1. **Game Initialization**:
-   - Load game settings and previous statistics
-   - Initialize Pygame environment
-   - Display welcome screen
+### การทำงานเวอร์ชันเดสก์ท็อป
+1. **การเริ่มต้นเกม**:
+   - โหลดการตั้งค่าเกมและสถิติเดิม
+   - เริ่มต้นสภาพแวดล้อม Pygame
+   - แสดงหน้าจอต้อนรับ
 
-2. **Game Loop**:
-   - Handle player input (mouse clicks)
-   - Process game logic (check valid moves, win conditions)
-   - Execute AI move using selected strategy
-   - Update game state
-   - Render updated game board
-   - Check for game completion
+2. **ลูปเกม**:
+   - จัดการการรับข้อมูลจากผู้ใช้ (คลิกเมาส์)
+   - ประมวลผลโลจิกเกม (ตรวจสอบการเคลื่อนไหวที่ถูกต้อง, เงื่อนไขชนะ)
+   - ประมวลผลการเคลื่อนไหว AI โดยใช้กลยุทธ์ที่เลือก
+   - อัปเดตสถานะเกม
+   - แสดงกระดานเกมที่อัปเดต
+   - ตรวจสอบการเสร็จสิ้นเกม
 
-3. **Game Completion**:
-   - Display result (win, lose, draw)
-   - Update statistics
-   - Save patterns for pattern recognition AI
-   - Offer restart options
+3. **การเสร็จสิ้นเกม**:
+   - แสดงผลลัพธ์ (ชนะ, แพ้, เสมอ)
+   - อัปเดตสถิติ
+   - บันทึกรูปแบบสำหรับ AI การจดจำรูปแบบ
+   - เสนอทางเลือกในการเริ่มเกมใหม่
 
-### Web Version Workflow
-1. **Client Initialization**:
-   - Load HTML/CSS/JS resources
-   - Display welcome screen with game statistics
+### การทำงานเวอร์ชันเว็บ
+1. **การเริ่มต้นไคลเอ็นต์**:
+   - โหลดทรัพยากร HTML/CSS/JS
+   - แสดงหน้าจอต้อนรับพร้อมสถิติเกม
 
-2. **Game Start**:
-   - User selects AI strategy
-   - Client sends request to start new game
-   - Server initializes game state and responds
-   - Client renders initial game board
+2. **การเริ่มเกม**:
+   - ผู้ใช้เลือกกลยุทธ์ AI
+   - ไคลเอ็นต์ส่งคำขอเพื่อเริ่มเกมใหม่
+   - เซิร์ฟเวอร์เริ่มต้นสถานะเกมและตอบกลับ
+   - ไคลเอ็นต์แสดงกระดานเกมเริ่มต้น
 
-3. **Game Loop**:
-   - User clicks on cell
-   - Client sends move to server via API
-   - Server validates move, updates board, and executes AI move
-   - Server checks for game completion
-   - Server responds with updated game state
-   - Client updates UI based on response
-   - If game is over, automatically display results
+3. **ลูปเกม**:
+   - ผู้ใช้คลิกที่เซลล์
+   - ไคลเอ็นต์ส่งการเคลื่อนไหวไปยังเซิร์ฟเวอร์ผ่าน API
+   - เซิร์ฟเวอร์ตรวจสอบการเคลื่อนไหว, อัปเดตกระดาน, และประมวลผลการเคลื่อนไหว AI
+   - เซิร์ฟเวอร์ตรวจสอบการเสร็จสิ้นเกม
+   - เซิร์ฟเวอร์ตอบกลับพร้อมสถานะเกมที่อัปเดต
+   - ไคลเอ็นต์อัปเดต UI ตามคำตอบ
+   - หากเกมเสร็จสิ้น, แสดงผลลัพธ์อัตโนมัติ
 
-4. **Game Completion**:
-   - Display result overlay (win, lose, draw)
-   - Server updates statistics
-   - Server saves patterns for pattern recognition AI
-   - Offer options to play again or return to menu
+4. **การเสร็จสิ้นเกม**:
+   - แสดงผลลัพธ์แบบโอเวอร์เลย์ (ชนะ, แพ้, เสมอ)
+   - เซิร์ฟเวอร์อัปเดตสถิติ
+   - เซิร์ฟเวอร์บันทึกรูปแบบสำหรับ AI การจดจำรูปแบบ
+   - เสนอทางเลือกในการเล่นอีกครั้งหรือกลับไปยังเมนู
 
-## Desktop Version
+## เวอร์ชันเดสก์ท็อป
 
-### How to Play
+### วิธีการเล่น
 
-1. Install the required packages:
+1. ติดตั้งแพ็คเกจที่จำเป็น:
    ```
    pip install -r requirements.txt
    ```
 
-2. Run the game:
+2. เริ่มเกม:
    ```
    python tictactoe.py
    ```
 
-3. Game Controls:
-   - Click on a square to place an 'O'
-   - AI will automatically place 'X' after your move
-   - Click on the AI strategy buttons at the bottom to change AI opponents
-   - Press 'r' to restart the game
+3. การควบคุมเกม:
+   - คลิกที่สี่เหลี่ยมจัตุรัสเพื่อวาง 'O'
+   - AI จะวาง 'X' อัตโนมัติหลังจากการเคลื่อนไหวของคุณ
+   - คลิกที่ปุ่มกลยุทธ์ AI ที่ด้านล่างเพื่อเปลี่ยนคู่แข่ง AI
+   - กด 'r' เพื่อเริ่มเกมใหม่
 
-## Web Application Version
+## เวอร์ชันเว็บแอปพลิเคชัน
 
-### How to Run
+### วิธีการเริ่ม
 
-1. Install the required packages:
+1. ติดตั้งแพ็คเกจที่จำเป็น:
    ```
    pip install -r requirements.txt
    ```
 
-2. Run the Flask web server:
+2. เริ่มเซิร์ฟเวอร์ Flask:
    ```
    python app.py
    ```
 
-3. Open your web browser and navigate to:
+3. เปิดเว็บเบราว์เซอร์และไปที่:
    ```
    http://127.0.0.1:5000
    ```
 
-### Features of the Web Version
+### คุณสมบัติของเวอร์ชันเว็บ
 
-- Responsive design that works on desktop and mobile devices
-- Modern UI with smooth animations and transitions
-- Game statistics saved between sessions
-- Pattern recognition AI that learns from your play style
-- Ability to toggle between AI strategies during gameplay
-- Automatic display of game results when game ends
+- ดีไซน์ที่ตอบสนองได้ทั้งเดสก์ท็อปและอุปกรณ์มือถือ
+- อินเตอร์เฟซที่ทันสมัยพร้อมแอนิเมชั่นและทรานซิชั่นที่ราบรื่น
+- สถิติเกมที่บันทึกระหว่างเซสชัน
+- AI การจดจำรูปแบบที่เรียนรู้จากสไตล์การเล่นของคุณ
+- ความสามารถในการสลับกลยุทธ์ AI ระหว่างการเล่น
+- การแสดงผลลัพธ์เกมอัตโนมัติเมื่อเกมสิ้นสุด
 
-### How to Play (Web Version)
+### วิธีการเล่น (เวอร์ชันเว็บ)
 
-1. Select an AI mode on the welcome screen
-2. Click "Start Game" to begin
-3. Click on a cell to place your 'O' mark
-4. AI will automatically respond with an 'X'
-5. When the game ends, results will automatically display
-6. Click "Play Again" or press 'R' to start a new game
-7. Click "Menu" or press 'ESC' to return to the welcome screen
+1. เลือกโหมด AI ในหน้าจอต้อนรับ
+2. คลิก "เริ่มเกม" เพื่อเริ่ม
+3. คลิกที่เซลล์เพื่อวาง 'O'
+4. AI จะตอบกลับด้วย 'X' อัตโนมัติ
+5. เมื่อเกมสิ้นสุด, ผลลัพธ์จะแสดงอัตโนมัติ
+6. คลิก "เล่นอีกครั้ง" หรือกด 'R' เพื่อเริ่มเกมใหม่
+7. คลิก "เมนู" หรือกด 'ESC' เพื่อกลับไปยังหน้าจอต้อนรับ
 
-## AI Approaches
+## แนวทาง AI
 
-### Minimax Algorithm
-The classic approach that recursively searches through all possible game states to determine the optimal move, always resulting in a draw or AI win if played optimally.
+### อัลกอริทึม Minimax
 
-### Pattern Recognition
-- Analyzes and records player move patterns
-- Builds a database of strategies and counter-responses
-- Adapts to individual player styles
+อัลกอริทึม Minimax เป็นเทคนิคการค้นหาในทฤษฎีเกมที่ใช้ในการตัดสินใจที่ดีที่สุดในเกมที่มีผู้เล่นสองคน โดยการประเมินผลลัพธ์ที่เป็นไปได้ทั้งหมดของการเคลื่อนไหวในอนาคต และเลือกการเคลื่อนไหวที่ให้ผลลัพธ์ที่ดีที่สุดสำหรับผู้เล่นที่กำลังตัดสินใจ
 
-## Technical Details
+### การจดจำรูปแบบ (Pattern Recognition)
 
-The game demonstrates multiple AI concepts:
-- Game theory and decision trees (Minimax)
-- Pattern recognition and adaptive learning
+- วิเคราะห์และบันทึกรูปแบบการเล่นของผู้เล่น
+- สร้างฐานข้อมูลของกลยุทธ์และการตอบสนอง
+- ปรับตัวตามสไตล์การเล่นของแต่ละบุคคล
 
-Game statistics and AI model data are saved between sessions for continuous learning.
+## รายละเอียดทางเทคนิค
 
-## Data Flow
+เกมนี้แสดงให้เห็นถึงแนวคิด AI หลายอย่าง:
+- ทฤษฎีเกมและต้นไม้ตัดสินใจ (Minimax)
+- การจดจำรูปแบบและการเรียนรู้แบบปรับตัว
+
+สถิติเกมและข้อมูลโมเดล AI จะถูกบันทึกระหว่างเซสชันเพื่อเรียนรู้อย่างต่อเนื่อง
+
+## การไหลของข้อมูล
 
 ```
 +------------------+           +------------------+           +------------------+
-|                  |  Player   |                  |    AI     |                  |
-|    Player        +---------->+    Game Board    +---------->+    AI System     |
-|    Input         |   Move    |    State         |  Strategy |    Logic         |
+|                  |  ผู้เล่น  |                  |    AI     |                  |
+|    ผู้เล่น      +---------->+    กระดานเกม   +---------->+    ระบบ AI      |
+|    การรับข้อมูล |   การเคลื่อนไหว |    สถานะ     |  กลยุทธ์ |    โลจิก       |
 |                  |           |                  |           |                  |
 +------------------+           +--+---+-----------+           +--------+---------+
                                   |   ^                                |
@@ -222,8 +246,8 @@ Game statistics and AI model data are saved between sessions for continuous lear
                                   v   |                                v
                                +--+---+-----------+           +--------+---------+
                                |                  |           |                  |
-                               |    Game Logic    |<----------+    AI Move      |
-                               |    Controller    |           |    Generator     |
+                               |    โลจิกเกม     |<----------+    การเคลื่อนไหว AI|
+                               |    คอนโทรลเลอร์ |           |    เจเนอเรเตอร์  |
                                |                  |           |                  |
                                +------------------+           +------------------+
                                         |
@@ -231,19 +255,19 @@ Game statistics and AI model data are saved between sessions for continuous lear
                                         v
                                +------------------+
                                |                  |
-                               |    Statistics    |
-                               |    & Storage     |
+                               |    สถิติ &     |
+                               |    การจัดเก็บรูปแบบ|
                                |                  |
                                +------------------+
 ```
 
-## Technology Stack
+## สแต็กเทคโนโลยี
 
-### Desktop Version
+### เวอร์ชันเดสก์ท็อป
 - Python
 - Pygame
 
-### Web Version
+### เวอร์ชันเว็บ
 - Backend: Python, Flask
 - Frontend: HTML5, CSS3, JavaScript
-- Data Storage: JSON files
+- การจัดเก็บข้อมูล: ไฟล์ JSON
