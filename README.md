@@ -4,7 +4,7 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented in both desk
 
 ## Video
 
-[![Video](https://youtu.be/L88agPTTn9M?si=KlMIuSsvBM6sgKxh)](https://youtu.be/L88agPTTn9M?si=KlMIuSsvBM6sgKxh)
+[![Video](https://img.youtube.com/vi/L88agPTTn9M/0.jpg)](https://www.youtube.com/watch?v=L88agPTTn9M)
 
 ## Features
 
