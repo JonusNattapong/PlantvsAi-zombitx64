@@ -1,4 +1,8 @@
-### เกมกระดานที่มี AI หลายรูปแบบให้เล่นต่อสู้ด้วย
+# PlantvsAi เกมกระดานที่มี AI หลายรูปแบบให้เล่นต่อสู้ด้วย
+
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
+[![Flask](https://img.shields.io/badge/Flask-2.3.3-orange)](https://flask.palletsprojects.com/)
 
 ## เกมที่มีให้เล่น
 
@@ -18,7 +22,61 @@
 6. **Genetic Algorithm** - อัลกอริทึมเชิงวิวัฒนาการที่ปรับปรุงกลยุทธ์ด้วยการสุ่มกลายพันธุ์และการคัดเลือก
 7. **ZomPokerX64** - โมเดล AI ขั้นสูงสำหรับเกมโป๊กเกอร์ที่ใช้ Machine Learning และ Neural Networks
 
+## โครงสร้างโปรเจค
+
+```
+tictactoe-zombitx64/
+├── src/                    # โค้ดหลักของโปรเจค
+├── tests/                  # การทดสอบ
+├── docs/                   # เอกสารประกอบ
+│   ├── api/                # เอกสาร API
+│   ├── architecture/       # เอกสารสถาปัตยกรรม
+│   └── user-guide/         # คู่มือการใช้งาน
+├── static/                 # ไฟล์สถิต (CSS, JS, Images)
+├── templates/              # เทมเพลต HTML
+├── app.py                  # แอปพลิเคชัน Flask หลัก
+├── .env.example            # ตัวอย่างไฟล์ environment variables
+├── .gitignore              # ไฟล์ที่ git ควรเพิกเฉย
+├── .editorconfig           # การกำหนดค่าสำหรับเครื่องมือแก้ไข
+├── .pre-commit-config.yaml # การกำหนดค่า pre-commit hooks
+├── CHANGELOG.md            # ประวัติการเปลี่ยนแปลง
+├── CODE_OF_CONDUCT.md      # จรรยาบรรณของผู้มีส่วนร่วม
+├── CONTRIBUTING.md         # คู่มือการมีส่วนร่วม
+├── LICENSE                 # ข้อตกลงใบอนุญาต
+├── Makefile                # คำสั่งทั่วไปสำหรับโปรเจค
+├── pyproject.toml          # การกำหนดค่าโปรเจค Python
+├── pytest.ini              # การกำหนดค่า pytest
+├── README.md               # ไฟล์ README นี้
+├── requirements.txt        # dependencies หลัก
+├── requirements-dev.txt    # dependencies สำหรับการพัฒนา
+└── setup.py                # สคริปต์การติดตั้ง
+```
+
 ## การติดตั้ง
+
+สามารถใช้ได้สองวิธี:
+
+### วิธีที่ 1: ใช้ Makefile (แนะนำ)
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/tictactoe-zombitx64.git
+cd tictactoe-zombitx64
+
+# ติดตั้งและตั้งค่าสภาพแวดล้อม
+make setup
+
+# เปิดใช้งานสภาพแวดล้อมเสมือน
+# สำหรับ Unix/MacOS:
+source venv/bin/activate
+# สำหรับ Windows:
+venv\Scripts\activate
+
+# รันเซิร์ฟเวอร์
+make server
+```
+
+### วิธีที่ 2: ใช้คำสั่ง Python
 
 ```bash
 # Clone repository
@@ -39,12 +97,39 @@ python app.py
 
 จากนั้นเข้าไปที่ http://localhost:5000 ในเว็บเบราว์เซอร์เพื่อเริ่มเล่นเกม
 
+## คำสั่งที่มีประโยชน์
+
+โปรเจคนี้มาพร้อมกับ Makefile ที่มีคำสั่งที่มีประโยชน์หลายอย่าง:
+
+- `make setup` - ตั้งค่าสภาพแวดล้อมการพัฒนา
+- `make test` - รันการทดสอบทั้งหมด
+- `make lint` - ตรวจสอบรูปแบบโค้ด
+- `make format` - จัดรูปแบบโค้ดโดยอัตโนมัติ
+- `make docs` - สร้างเอกสาร
+- `make server` - รันเซิร์ฟเวอร์การพัฒนา
+
+รันคำสั่ง `make help` เพื่อดูรายการคำสั่งที่มีทั้งหมด
+
 ## การใช้งาน
 
 1. เลือกเกมที่ต้องการเล่นจากหน้าหลัก
 2. เลือกอัลกอริทึม AI ที่ต้องการเล่นด้วย
 3. เล่นเกมตามกติกาของแต่ละเกม
 4. สถิติการเล่นจะถูกบันทึกไว้และแสดงผลในหน้าเกม
+
+## เอกสาร
+
+เอกสารเพิ่มเติมสามารถพบได้ในโฟลเดอร์ `docs/`:
+
+- **API Documentation**: อธิบายเกี่ยวกับ API ที่มีให้ใช้
+- **Architecture Documentation**: อธิบายสถาปัตยกรรมของระบบ
+- **User Guide**: คู่มือผู้ใช้โดยละเอียด
+
+คุณสามารถสร้างเอกสาร HTML ได้โดยใช้คำสั่ง:
+
+```bash
+make docs
+```
 
 # เกมโป๊กเกอร์ (Poker Game)
 
@@ -246,6 +331,18 @@ graph TB
     A4 --> RaiseCalc[Determine Raise Amount]
 ```
 
-## License
+## การมีส่วนร่วมในโปรเจค
 
-MIT
+เรายินดีต้อนรับการมีส่วนร่วมจากทุกคน! โปรดดูที่ [CONTRIBUTING.md](CONTRIBUTING.md) สำหรับรายละเอียดเกี่ยวกับวิธีการมีส่วนร่วม
+
+## จรรยาบรรณ
+
+โปรเจคนี้อยู่ภายใต้ [Code of Conduct](CODE_OF_CONDUCT.md) ทุกคนที่มีส่วนร่วมถูกคาดหวังให้ปฏิบัติตามข้อกำหนดเหล่านี้
+
+## ประวัติการเปลี่ยนแปลง
+
+ดูการเปลี่ยนแปลงทั้งหมดของโปรเจคได้ที่ [CHANGELOG.md](CHANGELOG.md)
+
+## ใบอนุญาต
+
+โปรเจคนี้อยู่ภายใต้ใบอนุญาต MIT - ดูไฟล์ [LICENSE](LICENSE) สำหรับรายละเอียด
