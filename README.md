@@ -25,7 +25,7 @@
 ## โครงสร้างโปรเจค
 
 ```
-tictactoe-zombitx64/
+PlantvsAi-zombitx64/
 ├── src/                    # โค้ดหลักของโปรเจค
 ├── tests/                  # การทดสอบ
 ├── docs/                   # เอกสารประกอบ
@@ -60,8 +60,8 @@ tictactoe-zombitx64/
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/tictactoe-zombitx64.git
-cd tictactoe-zombitx64
+git clone https://github.com/JonusNattapong/PlantvsAi-zombitx64.git
+cd PlantvsAi-zombitx64
 
 # ติดตั้งและตั้งค่าสภาพแวดล้อม
 make setup
@@ -80,8 +80,8 @@ make server
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/tictactoe-zombitx64.git
-cd tictactoe-zombitx64
+git clone https://github.com/JonusNattapong/PlantvsAi-zombitx64.git
+cd JonusNattapong/PlantvsAi-zombitx64
 
 # สร้างสภาพแวดล้อมเสมือน
 python -m venv venv
