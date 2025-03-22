@@ -1,22 +1,22 @@
 # Tictactoe-zombitx64
 
-A Tic-tac-toe game with multiple AI opponent strategies implemented using Python and Pygame.
+A Tic-tac-toe game with multiple AI opponent strategies implemented in both desktop (Pygame) and web application versions.
 
 ## Features
 
 - Interactive 3x3 Tic-tac-toe board
 - Player vs AI gameplay 
-- Four different AI strategies:
+- Two different AI strategies:
   1. **Minimax Algorithm**: Traditional unbeatable algorithm
-  2. **Q-Learning (Reinforcement Learning)**: AI that learns from experience
-  3. **Neural Network**: Deep learning approach using TensorFlow
-  4. **Pattern Recognition**: Analyzes and adapts to player patterns
+  2. **Pattern Recognition**: Analyzes and adapts to player patterns
 - Game statistics tracking
 - Real-time performance analysis
 - Strategy switching during gameplay
 - Modern user interface
 
-## How to Play
+## Desktop Version
+
+### How to Play
 
 1. Install the required packages:
    ```
@@ -34,20 +34,47 @@ A Tic-tac-toe game with multiple AI opponent strategies implemented using Python
    - Click on the AI strategy buttons at the bottom to change AI opponents
    - Press 'r' to restart the game
 
+## Web Application Version
+
+### How to Run
+
+1. Install the required packages:
+   ```
+   pip install -r requirements.txt
+   ```
+
+2. Run the Flask web server:
+   ```
+   python app.py
+   ```
+
+3. Open your web browser and navigate to:
+   ```
+   http://127.0.0.1:5000
+   ```
+
+### Features of the Web Version
+
+- Responsive design that works on desktop and mobile devices
+- Modern UI with smooth animations and transitions
+- Game statistics saved between sessions
+- Pattern recognition AI that learns from your play style
+- Ability to toggle between AI strategies during gameplay
+
+### How to Play (Web Version)
+
+1. Select an AI mode on the welcome screen
+2. Click "Start Game" to begin
+3. Click on a cell to place your 'O' mark
+4. AI will automatically respond with an 'X'
+5. Use the "Show Results" button to view game outcome when game ends
+6. Click "Play Again" or press 'R' to start a new game
+7. Click "Menu" or press 'ESC' to return to the welcome screen
+
 ## AI Approaches
 
 ### Minimax Algorithm
 The classic approach that recursively searches through all possible game states to determine the optimal move, always resulting in a draw or AI win if played optimally.
-
-### Q-Learning (Reinforcement Learning)
-- Uses a Q-table to store state-action values
-- Learns by playing and adjusting Q-values based on game outcomes
-- Improves over time through exploration and exploitation
-
-### Neural Network
-- Implemented with TensorFlow
-- Trained to predict optimal moves based on board state
-- Learning progress displayed in real-time statistics
 
 ### Pattern Recognition
 - Analyzes and records player move patterns
@@ -58,8 +85,17 @@ The classic approach that recursively searches through all possible game states 
 
 The game demonstrates multiple AI concepts:
 - Game theory and decision trees (Minimax)
-- Reinforcement learning principles (Q-Learning)
-- Neural networks for strategic decision-making
 - Pattern recognition and adaptive learning
 
 Game statistics and AI model data are saved between sessions for continuous learning.
+
+## Technology Stack
+
+### Desktop Version
+- Python
+- Pygame
+
+### Web Version
+- Backend: Python, Flask
+- Frontend: HTML5, CSS3, JavaScript
+- Data Storage: JSON files
