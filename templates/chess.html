@@ -1,60 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chess - AI vs Player</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <title>Chess - PlantvsAi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#ff4e50',
+                            hover: '#f9d423',
+                        },
+                        dark: {
+                            DEFAULT: '#1a1a2e',
+                            secondary: '#16213e',
+                        },
+                        board: {
+                            light: '#f0d9b5',
+                            dark: '#b58863',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
     <style>
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 20px auto;
-            max-width: 800px;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
         
-        #chess-board {
-            display: grid;
-            grid-template-columns: repeat(8, 60px);
-            grid-template-rows: repeat(8, 60px);
-            border: 3px solid #5D4037;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
         }
         
-        .square {
-            width: 60px;
-            height: 60px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(var(--slideX), var(--slideY)); }
+        }
+        
+        .animations-disabled * {
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        .piece-selected {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .valid-move {
             position: relative;
         }
         
-        .square.light {
-            background-color: #f0d9b5;
-        }
-        
-        .square.dark {
-            background-color: #b58863;
-        }
-        
-        .square.selected {
-            background-color: #3f769e;
-        }
-        
-        .square.valid-move {
-            position: relative;
-        }
-        
-        .square.valid-move::before {
-            content: "";
+        .valid-move::after {
+            content: '';
             position: absolute;
-            width: 20px;
-            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20%;
+            height: 20%;
             background-color: rgba(0, 128, 0, 0.4);
             border-radius: 50%;
-            z-index: 1;
         }
         
         .piece {
@@ -73,138 +90,16 @@
             color: black;
         }
         
-        .control-panel {
-            margin-top: 20px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
+        .square.light {
+            background-color: #f0d9b5;
         }
         
-        .ai-selector {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin: 20px 0;
+        .square.dark {
+            background-color: #b58863;
         }
         
-        #game-status {
-            margin: 15px 0;
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            text-align: center;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        #back-to-menu-btn {
-            background-color: #f44336;
-        }
-        
-        #back-to-menu-btn:hover {
-            background-color: #d32f2f;
-        }
-        
-        .stats-panel {
-            display: flex;
-            justify-content: space-around;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px auto;
-            max-width: 800px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .winner-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .winner-overlay.active {
-            display: flex;
-        }
-        
-        .winner-message {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            max-width: 400px;
-        }
-        
-        .winner-buttons {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-        
-        .promotion-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .promotion-overlay.active {
-            display: flex;
-        }
-        
-        .promotion-dialog {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        #promotion-options {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 15px;
+        .square.selected {
+            background-color: #3f769e;
         }
         
         .promotion-option {
@@ -217,85 +112,236 @@
             align-items: center;
             cursor: pointer;
             font-size: 40px;
+            margin: 5px;
         }
         
-        .promotion-option:hover {
-            background-color: #3f769e;
-            color: white;
+        .promotion-options {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
         }
     </style>
 </head>
-<body>
-    <h1>Chess - AI vs Player</h1>
-    
-    <div class="ai-selector">
-        <label for="ai-mode">Select AI Algorithm:</label>
-        <select id="ai-mode">
-            <option value="0">Minimax</option>
-            <option value="1">Pattern Recognition</option>
-            <option value="2">Q-Learning</option>
-            <option value="3">Neural Network</option>
-            <option value="4">MCTS</option>
-            <option value="5">Genetic Algorithm</option>
-        </select>
-        <button id="change-ai-btn">Change AI</button>
-    </div>
-    
-    <div class="game-container">
-        <div id="game-status">Your turn! Choose a piece to move.</div>
-        
-        <div id="chess-board">
-            <!-- Squares will be added dynamically via JavaScript -->
+<body class="font-kanit bg-gradient-to-br from-dark to-dark-secondary text-white min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <a href="/" class="inline-block mb-8 text-gray-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                กลับหน้าหลัก
+            </a>
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
+                Chess
+            </h1>
+            <p class="text-xl text-gray-400">หมากรุกสากล กับ AI ที่ชาญฉลาด</p>
+        </header>
+
+        <!-- Status Bar -->
+        <div class="text-center mb-6">
+            <div id="game-status" class="text-2xl font-medium bg-white/10 inline-block px-6 py-2 rounded-full"></div>
         </div>
-        
-        <div class="control-panel">
-            <button id="new-game-btn">New Game</button>
-            <button id="back-to-menu-btn">Back to Menu</button>
-        </div>
-    </div>
-    
-    <div class="stats-panel">
-        <div class="stat-item">
-            <div class="stat-label">Total Games</div>
-            <div class="stat-value" id="total-games">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Player Wins</div>
-            <div class="stat-value" id="player-wins">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">AI Wins</div>
-            <div class="stat-value" id="ai-wins">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Draws</div>
-            <div class="stat-value" id="draws">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-label">Win Rate</div>
-            <div class="stat-value" id="win-rate">0%</div>
-        </div>
-    </div>
-    
-    <div class="winner-overlay" id="winner-overlay">
-        <div class="winner-message">
-            <h2 id="winner-text">Player Wins!</h2>
-            <div class="winner-buttons">
-                <button id="play-again-btn">Play Again</button>
-                <button id="return-to-menu-btn">Return to Menu</button>
+
+        <!-- Game Container -->
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Game Board -->
+            <div class="flex-1">
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
+                    <div class="max-w-2xl mx-auto">
+                        <!-- Board Coordinates -->
+                        <div class="flex items-center mb-2">
+                            <div class="w-8"></div>
+                            <div class="flex-1 grid grid-cols-8">
+                                <div class="text-center text-gray-400">A</div>
+                                <div class="text-center text-gray-400">B</div>
+                                <div class="text-center text-gray-400">C</div>
+                                <div class="text-center text-gray-400">D</div>
+                                <div class="text-center text-gray-400">E</div>
+                                <div class="text-center text-gray-400">F</div>
+                                <div class="text-center text-gray-400">G</div>
+                                <div class="text-center text-gray-400">H</div>
+                            </div>
+                        </div>
+
+                        <!-- Game Board -->
+                        <div class="flex">
+                            <!-- Row Numbers -->
+                            <div class="flex flex-col justify-around w-8">
+                                <div class="text-center text-gray-400">8</div>
+                                <div class="text-center text-gray-400">7</div>
+                                <div class="text-center text-gray-400">6</div>
+                                <div class="text-center text-gray-400">5</div>
+                                <div class="text-center text-gray-400">4</div>
+                                <div class="text-center text-gray-400">3</div>
+                                <div class="text-center text-gray-400">2</div>
+                                <div class="text-center text-gray-400">1</div>
+                            </div>
+
+                            <!-- Board Squares -->
+                            <div class="flex-1">
+                                <div id="chess-board" class="grid grid-cols-8 gap-0 border-2 border-board-dark rounded-lg overflow-hidden">
+                                    <!-- กระดานจะถูกสร้างด้วย JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="lg:w-80">
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
+                    <h2 class="text-2xl font-bold mb-4">การตั้งค่า</h2>
+                    
+                    <!-- Difficulty Selection -->
+                    <div class="mb-6">
+                        <label class="block text-gray-400 mb-2">ระดับความยาก</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-value="easy">ง่าย</button>
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-primary text-white transition-colors selected" data-value="medium">ปานกลาง</button>
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-value="hard">ยาก</button>
+                        </div>
+                    </div>
+
+                    <!-- Player Selection -->
+                    <div class="mb-6">
+                        <label class="block text-gray-400 mb-2">เลือกฝั่ง</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="select-white" class="px-4 py-2 rounded-lg bg-primary text-white transition-colors">
+                                <span class="inline-block w-4 h-4 bg-white rounded-full mr-2"></span>
+                                ขาว
+                            </button>
+                            <button id="select-black" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                                <span class="inline-block w-4 h-4 bg-black rounded-full mr-2"></span>
+                                ดำ
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Game Controls -->
+                    <div class="space-y-3">
+                        <button id="new-game-btn" class="w-full px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-lg font-medium transition-transform hover:scale-105">
+                            เริ่มเกมใหม่
+                        </button>
+                        <button id="back-to-menu-btn" class="w-full px-6 py-3 bg-white/5 rounded-lg font-medium hover:bg-white/10 transition-colors">
+                            กลับเมนูหลัก
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Moves -->
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
+                    <h2 class="text-2xl font-bold mb-4">การเดินล่าสุด</h2>
+                    <div id="move-history" class="text-sm text-gray-300 space-y-1 max-h-40 overflow-y-auto">
+                        <!-- Move history จะถูกเพิ่มโดย JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Sound/Animation Controls -->
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
+                    <h2 class="text-2xl font-bold mb-4">ตั้งค่าเพิ่มเติม</h2>
+                    <div class="flex justify-between">
+                        <button id="animation-toggle" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            ✨ เอฟเฟกต์: เปิด
+                        </button>
+                        <button id="sound-toggle" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            🔊
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Game Stats -->
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
+                    <h2 class="text-2xl font-bold mb-4">สถิติ</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">เกมทั้งหมด</span>
+                            <span id="total-games" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">ชนะ</span>
+                            <span id="player-wins" class="font-bold text-green-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">แพ้</span>
+                            <span id="ai-wins" class="font-bold text-red-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">เสมอ</span>
+                            <span id="draws" class="font-bold text-yellow-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">อัตราชนะ</span>
+                            <span id="win-rate" class="font-bold text-blue-400">0%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="promotion-overlay" id="promotion-overlay">
-        <div class="promotion-dialog">
-            <h3>Choose a piece for promotion:</h3>
-            <div id="promotion-options">
-                <!-- Promotion options will be added here -->
+
+    <!-- Winner Overlay -->
+    <div id="winner-overlay" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-lg text-center max-w-md w-full mx-4">
+            <h2 id="winner-text" class="text-3xl font-bold mb-6"></h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="play-again" class="px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-lg font-medium transition-transform hover:scale-105">
+                    เล่นอีกครั้ง
+                </button>
+                <button id="return-to-menu" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors">
+                    กลับเมนูหลัก
+                </button>
             </div>
         </div>
     </div>
-    
+
+    <!-- Promotion Overlay -->
+    <div id="promotion-overlay" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-lg text-center max-w-md w-full mx-4">
+            <h2 class="text-3xl font-bold mb-6">เลือกเลื่อนขั้นหมาก</h2>
+            <div class="promotion-options">
+                <!-- จะถูกเพิ่มโดย JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-3xl font-bold">วิธีการเล่น</h2>
+                <button id="close-help" class="text-gray-400 hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="text-gray-300 space-y-4">
+                <p>หมากรุกสากล (Chess) เป็นเกมกระดานคลาสสิกที่เล่นบนกระดานขนาด 8x8 ช่อง โดยแต่ละฝ่ายมีหมาก 16 ตัว ประกอบด้วย:</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>เบี้ย (Pawn) 8 ตัว - เดินหน้าได้ครั้งละ 1 ช่อง (ครั้งแรกเดินได้ 2 ช่อง) และกินทแยงได้</li>
+                    <li>เรือ (Rook) 2 ตัว - เดินได้ทั้งแนวตั้งและแนวนอน ไกลเท่าที่ต้องการ</li>
+                    <li>ม้า (Knight) 2 ตัว - เดินเป็นรูปตัว L (2 ช่องแล้วเลี้ยว 1 ช่อง) ข้ามหมากได้</li>
+                    <li>บิชอป (Bishop) 2 ตัว - เดินได้ทแยงมุมไกลเท่าที่ต้องการ</li>
+                    <li>ควีน (Queen) 1 ตัว - เดินได้ทุกทิศทาง ไกลเท่าที่ต้องการ</li>
+                    <li>คิง (King) 1 ตัว - เดินได้ทุกทิศทาง แต่ครั้งละ 1 ช่องเท่านั้น</li>
+                </ul>
+                <p>เป้าหมายคือการจับคิงของฝ่ายตรงข้ามให้อยู่ในสภาพ "รุกจน" (Checkmate) ซึ่งหมายถึงคิงถูกรุกและไม่สามารถเดินหนีหรือป้องกันการรุกได้อีกต่อไป</p>
+                <p>การเล่นในเกมนี้:</p>
+                <ul class="list-disc pl-5 space-y-2">
+                    <li>คลิกที่หมากของคุณที่ต้องการเดิน</li>
+                    <li>คลิกที่ช่องที่ต้องการไป (ช่องสีเขียวแสดงที่สามารถเดินได้)</li>
+                    <li>เมื่อเบี้ยไปถึงแถวสุดท้าย จะสามารถเลื่อนขั้นเป็นหมากที่แข็งแกร่งกว่าได้</li>
+                    <li>ระบบจะแสดงสถานะ "รุก" (Check) เมื่อคิงถูกคุกคาม</li>
+                    <li>การเดินพิเศษเช่น "การเดินผ่าน" (En Passant) และ "การรอก" (Castling) สามารถทำได้ตามกติกา</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Scripts -->
+    <script src="/static/game_utils.js"></script>
     <script src="/static/chess.js"></script>
 </body>
 </html>

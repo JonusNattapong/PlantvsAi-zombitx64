@@ -33,46 +33,118 @@ let gameState = {
         check: null,
         win: null,
         lose: null
-    }
+    },
+    isLoading: false,
+    errorMessage: null,
+    lastAction: null,
+    animationsEnabled: true
+};
+
+// DOM element references - cached for performance
+const communityCardsDiv = document.getElementById('community-cards');
+const playerHandDiv = document.getElementById('player-hand');
+const aiHandDiv = document.getElementById('ai-hand');
+const aiModeSelect = document.getElementById('ai-mode');
+const potAmountElement = document.getElementById('pot-amount');
+const gameStageElement = document.getElementById('game-stage');
+const betHistoryElement = document.getElementById('bet-history');
+const playerBalanceElement = document.getElementById('player-balance');
+const aiBalanceElement = document.getElementById('ai-balance');
+const actionButtons = document.querySelectorAll('#action-buttons button');
+const gameLogElement = document.getElementById('game-log');
+const animationToggle = document.getElementById('animation-toggle');
+const betSlider = document.getElementById('bet-slider');
+const currentBetElement = document.getElementById('current-bet');
+const statsElements = {
+    totalGames: document.getElementById('total-games'),
+    playerWins: document.getElementById('player-wins'),
+    aiWins: document.getElementById('ai-wins'),
+    draws: document.getElementById('draws'),
+    winRate: document.getElementById('win-rate')
 };
 
 // Initialize the game
 function initGame() {
-    // Generate session ID
-    gameState.sessionId = generateSessionId();
-    
-    // Set AI mode from URL parameters if provided
-    const urlParams = new URLSearchParams(window.location.search);
-    const aiParam = urlParams.get('ai');
-    if (aiParam !== null) {
-        gameState.aiMode = parseInt(aiParam);
-        aiModeSelect.value = aiParam;
+    // Wrap in try/catch for error handling
+    try {
+        // Generate session ID
+        gameState.sessionId = generateSessionId();
+        
+        // Set AI mode from URL parameters if provided
+        const urlParams = new URLSearchParams(window.location.search);
+        const aiParam = urlParams.get('ai');
+        if (aiParam !== null) {
+            gameState.aiMode = parseInt(aiParam);
+            if (aiModeSelect) aiModeSelect.value = aiParam;
+        }
+        
+        // Check for animation preference in localStorage
+        if (localStorage.getItem('pokerAnimationsEnabled') !== null) {
+            gameState.animationsEnabled = localStorage.getItem('pokerAnimationsEnabled') === 'true';
+        }
+        
+        // Load sound preferences
+        if (localStorage.getItem('pokerSoundEnabled') !== null) {
+            gameState.soundEnabled = localStorage.getItem('pokerSoundEnabled') === 'true';
+        }
+        
+        // Start a new game
+        startNewGame();
+        
+        // Load game statistics
+        loadGameStats();
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        // Initialize sounds - lazy load
+        loadSounds();
+        
+        // Update UI based on game state
+        updateUI();
+        
+        console.log('Poker game initialized successfully');
+    } catch (error) {
+        console.error('Error initializing game:', error);
+        showErrorMessage('เกิดข้อผิดพลาดในการโหลดเกม โปรดรีเฟรชหน้า');
     }
-    
-    // Start a new game
-    startNewGame();
-    
-    // Load game statistics
-    loadGameStats();
-    
-    // Set up event listeners
-    setupEventListeners();
-    
-    // Initialize sounds
-    loadSounds();
-    
-    // Update UI based on game state
-    updateUI();
 }
 
-// Load sound effects
+// Load sound effects - lazy loading
 function loadSounds() {
-    gameState.sounds.deal = new Audio('/static/sounds/Audio/deal.mp3');
-    gameState.sounds.chip = new Audio('/static/sounds/Audio/bet.mp3');
-    gameState.sounds.fold = new Audio('/static/sounds/Audio/fold.mp3');
-    gameState.sounds.check = new Audio('/static/sounds/Audio/check.mp3');
-    gameState.sounds.win = new Audio('/static/sounds/Audio/win.mp3');
-    gameState.sounds.lose = new Audio('/static/sounds/Audio/lose.mp3');
+    // Only load sounds if enabled
+    if (!gameState.soundEnabled) return;
+    
+    // Use promises to track loading status
+    const soundPromises = [];
+    
+    // Define sound paths
+    const soundPaths = {
+        deal: '/static/sounds/Audio/deal.mp3',
+        chip: '/static/sounds/Audio/bet.mp3',
+        fold: '/static/sounds/Audio/fold.mp3',
+        check: '/static/sounds/Audio/check.mp3',
+        win: '/static/sounds/Audio/win.mp3',
+        lose: '/static/sounds/Audio/lose.mp3'
+    };
+    
+    // Load each sound
+    for (const [key, path] of Object.entries(soundPaths)) {
+        const soundPromise = new Promise((resolve, reject) => {
+            gameState.sounds[key] = new Audio(path);
+            gameState.sounds[key].addEventListener('canplaythrough', resolve);
+            gameState.sounds[key].addEventListener('error', reject);
+        });
+        soundPromises.push(soundPromise);
+    }
+    
+    // Handle all sound loading
+    Promise.allSettled(soundPromises).then(results => {
+        const failedSounds = results.filter(r => r.status === 'rejected').length;
+        if (failedSounds > 0) {
+            console.warn(`${failedSounds} sounds failed to load`);
+        }
+    });
 }
 
 // Toggle sound on/off
@@ -82,61 +154,429 @@ function toggleSound() {
     if (soundToggle) {
         soundToggle.textContent = gameState.soundEnabled ? '🔊' : '🔇';
     }
+    // Save preference to localStorage
+    localStorage.setItem('pokerSoundEnabled', gameState.soundEnabled.toString());
 }
 
-// Play a sound if sound is enabled
-function playSound(soundName) {
-    if (gameState.soundEnabled && gameState.sounds[soundName]) {
-        gameState.sounds[soundName].play();
+// Toggle animations on/off
+function toggleAnimations() {
+    gameState.animationsEnabled = !gameState.animationsEnabled;
+    if (animationToggle) {
+        animationToggle.textContent = gameState.animationsEnabled ? '✨ เอฟเฟกต์: เปิด' : '✨ เอฟเฟกต์: ปิด';
     }
+    document.body.classList.toggle('animations-disabled', !gameState.animationsEnabled);
+    // Save preference to localStorage
+    localStorage.setItem('pokerAnimationsEnabled', gameState.animationsEnabled.toString());
+}
+
+// Play a sound if sound is enabled with error handling
+function playSound(soundName) {
+    try {
+        if (gameState.soundEnabled && gameState.sounds[soundName]) {
+            // Reset sound to beginning if already playing
+            gameState.sounds[soundName].currentTime = 0;
+            const playPromise = gameState.sounds[soundName].play();
+            
+            // Handle play promise to avoid Uncaught DOMException
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.warn(`Sound play error: ${error}`);
+                });
+            }
+        }
+    } catch (error) {
+        console.warn(`Error playing sound ${soundName}:`, error);
+    }
+}
+
+// Show error message to user
+function showErrorMessage(message) {
+    gameState.errorMessage = message;
+    
+    // Check if error element exists, if not create one
+    let errorElement = document.getElementById('game-error-message');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.id = 'game-error-message';
+        errorElement.className = 'bg-red-500 text-white p-3 rounded-lg fixed top-4 right-4 z-50 shadow-lg';
+        document.body.appendChild(errorElement);
+    }
+    
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        errorElement.style.display = 'none';
+    }, 5000);
+}
+
+// Generate session ID with improved randomness
+function generateSessionId() {
+    const timestamp = new Date().getTime().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    return `${timestamp}-${randomPart}`;
 }
 
 // Start a new poker game
 function startNewGame() {
-    // Clear the UI
-    communityCardsDiv.innerHTML = '';
-    playerHandDiv.innerHTML = '';
-    aiHandDiv.innerHTML = '';
-    
-    // Reset the bet slider container
-    betSliderContainer.style.display = 'none';
-    
-    // Clear bet history
-    gameState.betHistory = [];
-    
-    // Send request to start a new game
-    fetch('/api/new_game', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            session_id: gameState.sessionId,
-            ai_mode: gameState.aiMode,
-            game_type: 'Poker'
+    try {
+        // แสดงสถานะการโหลด
+        gameState.isLoading = true;
+        updateLoadingState(true);
+        
+        // ส่งคำขอ API เพื่อเริ่มเกมใหม่
+        fetch('/api/poker/new-game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: gameState.sessionId,
+                aiMode: gameState.aiMode
+            })
         })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            console.error('Error starting new game:', data.error);
-            return;
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // อัปเดตข้อมูลเกม
+            gameState.pot = data.pot || 0;
+            gameState.currentBet = data.currentBet || 0;
+            gameState.gameStage = data.gameStage || 'pre_flop';
+            gameState.communityCards = data.communityCards || [];
+            gameState.players = data.players || [];
+            gameState.currentPlayer = data.currentPlayer || 'player';
+            gameState.winner = data.winner || null;
+            gameState.betHistory = data.betHistory || [];
+            
+            // อัปเดต UI
+            updateUI();
+            updateBetHistory();
+            
+            // เล่นเสียงแจกไพ่
+            playSound('deal');
+            
+            // เคลียร์ข้อความผิดพลาด
+            gameState.errorMessage = null;
+        })
+        .catch(error => {
+            console.error('Error starting new game:', error);
+            showErrorMessage('ไม่สามารถเริ่มเกมใหม่ได้ โปรดลองอีกครั้ง');
+        })
+        .finally(() => {
+            // ซ่อนสถานะการโหลด
+            gameState.isLoading = false;
+            updateLoadingState(false);
+        });
+    } catch (error) {
+        console.error('Error in startNewGame:', error);
+        gameState.isLoading = false;
+        updateLoadingState(false);
+        showErrorMessage('เกิดข้อผิดพลาดในการเริ่มเกมใหม่');
+    }
+}
+
+// แสดง/ซ่อนสถานะการโหลด
+function updateLoadingState(isLoading) {
+    // สร้างหรือปรับปรุงตัวแสดงสถานะการโหลด
+    let loaderElement = document.getElementById('game-loader');
+    
+    if (isLoading) {
+        if (!loaderElement) {
+            loaderElement = document.createElement('div');
+            loaderElement.id = 'game-loader';
+            loaderElement.className = 'fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loaderElement.innerHTML = `
+                <div class="bg-dark-secondary p-4 rounded-lg shadow-lg flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-white">กำลังโหลด...</p>
+                </div>
+            `;
+            document.body.appendChild(loaderElement);
+        } else {
+            loaderElement.style.display = 'flex';
+        }
+    } else if (loaderElement) {
+        loaderElement.style.display = 'none';
+    }
+}
+
+// Handle player actions with improved error handling and feedback
+function handlePlayerAction(action, betAmount = 0) {
+    try {
+        // Disable action buttons during API call
+        toggleActionButtons(false);
+        
+        // Set loading state
+        gameState.isLoading = true;
+        
+        // Save current action for potential retry
+        gameState.lastAction = { action, betAmount };
+        
+        // Display loading indicator for the current action
+        const actionButton = document.getElementById(`btn-${action}`);
+        if (actionButton) {
+            const originalText = actionButton.textContent;
+            actionButton.innerHTML = `<span class="animate-pulse">⏳</span> ${originalText}`;
         }
         
-        // Update game state
-        updateGameState(data);
+        // Play appropriate sound
+        playSound(action === 'raise' ? 'chip' : action);
         
-        // Reset winner overlay
-        winnerOverlay.classList.remove('active');
-        
-        // Play deal sound after a short delay
-        setTimeout(() => {
-            playSound('deal');
-        }, 500);
-    })
-    .catch(error => {
-        console.error('Error starting new game:', error);
+        // Make API call
+        fetch('/api/poker/action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sessionId: gameState.sessionId,
+                action: action,
+                amount: betAmount,
+                aiMode: gameState.aiMode
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update game state with new data
+            updateGameStateFromResponse(data);
+            
+            // Apply animations for cards if enabled
+            if (gameState.animationsEnabled) {
+                animateGameUpdate(data.updatedElements || []);
+            }
+            
+            // If AI should move next, trigger AI move
+            if (data.currentPlayer === 'ai' && !data.gameOver) {
+                setTimeout(() => aiMove(), 1000); // Delay AI move for better UX
+            }
+            
+            // Restore action button text
+            if (actionButton) {
+                actionButton.textContent = originalText;
+            }
+        })
+        .catch(error => {
+            console.error(`Error during ${action} action:`, error);
+            showErrorMessage(`การดำเนินการ ${action} ล้มเหลว: ${error.message}`);
+            
+            // Add retry button for failed actions
+            showRetryButton();
+        })
+        .finally(() => {
+            // Reset loading state
+            gameState.isLoading = false;
+            toggleActionButtons(true);
+            updateUI();
+        });
+    } catch (error) {
+        console.error('Error in handlePlayerAction:', error);
+        gameState.isLoading = false;
+        toggleActionButtons(true);
+        showErrorMessage('เกิดข้อผิดพลาดระหว่างการดำเนินการ');
+    }
+}
+
+// Show retry button for failed actions
+function showRetryButton() {
+    if (!gameState.lastAction) return;
+    
+    const retryContainer = document.createElement('div');
+    retryContainer.id = 'retry-action';
+    retryContainer.className = 'fixed bottom-4 right-4 bg-yellow-600 p-3 rounded-lg shadow-lg z-50';
+    retryContainer.innerHTML = `
+        <p class="mb-2">เกิดข้อผิดพลาด ต้องการลองใหม่หรือไม่?</p>
+        <button id="retry-button" class="bg-white text-yellow-800 px-4 py-2 rounded">ลองใหม่</button>
+        <button id="cancel-retry" class="bg-gray-800 text-white px-4 py-2 rounded ml-2">ยกเลิก</button>
+    `;
+    
+    document.body.appendChild(retryContainer);
+    
+    // Add event listeners
+    document.getElementById('retry-button').addEventListener('click', () => {
+        const { action, betAmount } = gameState.lastAction;
+        document.body.removeChild(retryContainer);
+        handlePlayerAction(action, betAmount);
     });
+    
+    document.getElementById('cancel-retry').addEventListener('click', () => {
+        document.body.removeChild(retryContainer);
+    });
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (document.getElementById('retry-action')) {
+            document.body.removeChild(retryContainer);
+        }
+    }, 10000);
+}
+
+// Animate game elements that have been updated
+function animateGameUpdate(updatedElements) {
+    if (!gameState.animationsEnabled) return;
+    
+    updatedElements.forEach(element => {
+        // Find the DOM element
+        let targetElement;
+        
+        switch (element.type) {
+            case 'community_card':
+                targetElement = document.querySelector(`#community-cards .card[data-position="${element.position}"]`);
+                break;
+            case 'player_card':
+                targetElement = document.querySelector(`#player-hand .card[data-position="${element.position}"]`);
+                break;
+            case 'ai_card':
+                targetElement = document.querySelector(`#ai-hand .card[data-position="${element.position}"]`);
+                break;
+            case 'pot':
+                targetElement = potAmountElement;
+                break;
+            case 'player_balance':
+                targetElement = playerBalanceElement;
+                break;
+            case 'ai_balance':
+                targetElement = aiBalanceElement;
+                break;
+        }
+        
+        // Apply animation
+        if (targetElement) {
+            targetElement.classList.add('element-updated');
+            setTimeout(() => {
+                targetElement.classList.remove('element-updated');
+            }, 1000);
+        }
+    });
+}
+
+// Toggle action buttons enable/disable state
+function toggleActionButtons(enabled) {
+    actionButtons.forEach(button => {
+        if (enabled) {
+            // Only enable buttons that should be enabled based on current game state
+            updateActionButtons();
+        } else {
+            button.disabled = true;
+        }
+    });
+}
+
+// Update game state from API response
+function updateGameStateFromResponse(data) {
+    // Update core game state properties
+    gameState.pot = data.pot || gameState.pot;
+    gameState.currentBet = data.currentBet || gameState.currentBet;
+    gameState.gameStage = data.gameStage || gameState.gameStage;
+    gameState.communityCards = data.communityCards || gameState.communityCards;
+    gameState.players = data.players || gameState.players;
+    gameState.currentPlayer = data.currentPlayer || gameState.currentPlayer;
+    gameState.winner = data.winner || gameState.winner;
+    gameState.betHistory = data.betHistory || gameState.betHistory;
+    
+    // If game is over, show result
+    if (data.gameOver) {
+        showGameResult();
+    }
+}
+
+// Update the UI based on current game state
+function updateUI() {
+    try {
+        // Update game stage display
+        if (gameStageElement) {
+            gameStageElement.textContent = formatGameStage(gameState.gameStage);
+        }
+        
+        // Update pot amount
+        if (potAmountElement) {
+            potAmountElement.textContent = gameState.pot;
+        }
+        
+        // Update player and AI hands
+        updatePlayerHand();
+        updateAIHand();
+        
+        // Update community cards
+        updateCommunityCards();
+        
+        // Update bet history
+        updateBetHistory();
+        
+        // Update action buttons availability
+        updateActionButtons();
+        
+        // Update player and AI balances
+        updateBalances();
+        
+        // Update AI thinking indicator
+        updateAIThinking();
+        
+        // Update animations toggle button
+        if (animationToggle) {
+            animationToggle.textContent = gameState.animationsEnabled ? '✨ เอฟเฟกต์: เปิด' : '✨ เอฟเฟกต์: ปิด';
+        }
+        
+        // Update sound toggle button
+        const soundToggle = document.getElementById('sound-toggle');
+        if (soundToggle) {
+            soundToggle.textContent = gameState.soundEnabled ? '🔊' : '🔇';
+        }
+        
+        // Update bet slider if present
+        updateBetSlider();
+    } catch (error) {
+        console.error('Error updating UI:', error);
+    }
+}
+
+// Update bet slider value and display
+function updateBetSlider() {
+    if (!betSlider || !currentBetElement) return;
+    
+    // Find player object
+    const player = gameState.players.find(p => p.name === 'player');
+    if (!player) return;
+    
+    // Set max value to player balance
+    betSlider.max = player.balance;
+    
+    // Ensure current value doesn't exceed balance
+    if (parseInt(betSlider.value) > player.balance) {
+        betSlider.value = player.balance;
+    }
+    
+    // Update displayed value
+    currentBetElement.textContent = betSlider.value;
+    
+    // Disable slider if not player's turn or game is over
+    betSlider.disabled = gameState.currentPlayer !== 'player' || gameState.gameOver;
+}
+
+// Update player and AI balances
+function updateBalances() {
+    // Find player and AI objects
+    const player = gameState.players.find(p => p.name === 'player');
+    const ai = gameState.players.find(p => p.name === 'ai');
+    
+    // Update player balance
+    if (player && playerBalanceElement) {
+        playerBalanceElement.textContent = player.balance;
+    }
+    
+    // Update AI balance
+    if (ai && aiBalanceElement) {
+        aiBalanceElement.textContent = ai.balance;
+    }
 }
 
 // Update the player's hand

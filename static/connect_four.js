@@ -7,10 +7,15 @@ let gameState = {
     gameOver: false,
     winner: null,
     playerTurn: true,
-    aiMode: 0
+    aiMode: 0,
+    isLoading: false,
+    errorMessage: null,
+    lastAction: null,
+    animationsEnabled: true,
+    soundEnabled: true
 };
 
-// DOM elements
+// DOM elements - แคชไว้เพื่อเพิ่มประสิทธิภาพ
 const gameBoard = document.getElementById('game-board');
 const columnHovers = document.getElementById('column-hovers');
 const statusText = document.querySelector('.status');
@@ -24,11 +29,13 @@ const winnerOverlay = document.getElementById('winner-overlay');
 const winnerText = document.getElementById('winner-text');
 
 // Statistics elements
-const totalGamesElement = document.getElementById('total-games');
-const playerWinsElement = document.getElementById('player-wins');
-const aiWinsElement = document.getElementById('ai-wins');
-const drawsElement = document.getElementById('draws');
-const winRateElement = document.getElementById('win-rate');
+const statsElements = {
+    totalGames: document.getElementById('total-games'),
+    playerWins: document.getElementById('player-wins'),
+    aiWins: document.getElementById('ai-wins'),
+    draws: document.getElementById('draws'),
+    winRate: document.getElementById('win-rate')
+};
 
 // Game configuration
 const ROWS = 6;
@@ -38,34 +45,171 @@ const HOVER_SIZE = 20;
 
 // เริ่มเกม
 function initGame() {
-    // สร้าง sessionId
-    gameState.sessionId = generateSessionId();
-    
-    // ตั้งค่าโหมด AI จาก URL parameters (ถ้ามี)
-    const urlParams = new URLSearchParams(window.location.search);
-    const aiParam = urlParams.get('ai');
-    if (aiParam !== null) {
-        gameState.aiMode = parseInt(aiParam);
-        aiModeSelect.value = aiParam;
+    try {
+        console.log('Initializing Connect Four game...');
+        
+        // สร้าง sessionId
+        gameState.sessionId = generateSessionId();
+        
+        // ตั้งค่าโหมด AI จาก URL parameters (ถ้ามี)
+        const urlParams = new URLSearchParams(window.location.search);
+        const aiParam = urlParams.get('ai');
+        if (aiParam !== null) {
+            gameState.aiMode = parseInt(aiParam);
+            if (aiModeSelect) aiModeSelect.value = aiParam;
+        }
+        
+        // โหลดค่าพรีเฟอเรนซ์จาก localStorage
+        loadPreferences();
+        
+        // เริ่มเกมใหม่
+        startNewGame();
+        
+        // สร้างกระดานและ hover indicators
+        createBoard();
+        createColumnHovers();
+        
+        // โหลดสถิติ
+        loadGameStats();
+        
+        // ตั้งค่า event listeners
+        setupEventListeners();
+        
+        console.log('Connect Four game initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Connect Four game:', error);
+        showErrorMessage('เกิดข้อผิดพลาดในการโหลดเกม โปรดรีเฟรชหน้า');
     }
-    
-    // เริ่มเกมใหม่
-    startNewGame();
-    
-    // สร้างกระดานและ hover indicators
-    createBoard();
-    createColumnHovers();
-    
-    // โหลดสถิติ
-    loadGameStats();
-    
-    // ตั้งค่า event listeners
-    setupEventListeners();
 }
 
-// สร้าง sessionId แบบสุ่ม
+// โหลดค่าพรีเฟอเรนซ์จาก localStorage
+function loadPreferences() {
+    // โหลดการตั้งค่าแอนิเมชัน
+    if (localStorage.getItem('connectFourAnimationsEnabled') !== null) {
+        gameState.animationsEnabled = localStorage.getItem('connectFourAnimationsEnabled') === 'true';
+        updateAnimationToggle();
+    }
+    
+    // โหลดการตั้งค่าเสียง
+    if (localStorage.getItem('connectFourSoundEnabled') !== null) {
+        gameState.soundEnabled = localStorage.getItem('connectFourSoundEnabled') === 'true';
+        updateSoundToggle();
+    }
+}
+
+// อัปเดตปุ่มเปิด/ปิดแอนิเมชัน
+function updateAnimationToggle() {
+    const animationToggle = document.getElementById('animation-toggle');
+    if (animationToggle) {
+        animationToggle.textContent = gameState.animationsEnabled ? 
+            '✨ เอฟเฟกต์: เปิด' : '✨ เอฟเฟกต์: ปิด';
+    }
+    
+    // เพิ่มหรือลบคลาสสำหรับแอนิเมชัน
+    document.body.classList.toggle('animations-disabled', !gameState.animationsEnabled);
+}
+
+// อัปเดตปุ่มเปิด/ปิดเสียง
+function updateSoundToggle() {
+    const soundToggle = document.getElementById('sound-toggle');
+    if (soundToggle) {
+        soundToggle.textContent = gameState.soundEnabled ? '🔊' : '🔇';
+    }
+}
+
+// เปิด/ปิดแอนิเมชัน
+function toggleAnimations() {
+    gameState.animationsEnabled = !gameState.animationsEnabled;
+    updateAnimationToggle();
+    
+    // บันทึกค่าพรีเฟอเรนซ์
+    localStorage.setItem('connectFourAnimationsEnabled', gameState.animationsEnabled.toString());
+}
+
+// เปิด/ปิดเสียง
+function toggleSound() {
+    gameState.soundEnabled = !gameState.soundEnabled;
+    updateSoundToggle();
+    
+    // บันทึกค่าพรีเฟอเรนซ์
+    localStorage.setItem('connectFourSoundEnabled', gameState.soundEnabled.toString());
+}
+
+// สร้าง sessionId แบบสุ่มที่มีความปลอดภัยมากขึ้น
 function generateSessionId() {
-    return Math.floor(Math.random() * 100000).toString();
+    const timestamp = new Date().getTime().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    return `${timestamp}-${randomPart}`;
+}
+
+// แสดงข้อความผิดพลาด
+function showErrorMessage(message) {
+    gameState.errorMessage = message;
+    
+    // ตรวจสอบว่ามี element แสดงข้อผิดพลาดหรือไม่ ถ้าไม่มีให้สร้างใหม่
+    let errorElement = document.getElementById('game-error-message');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.id = 'game-error-message';
+        errorElement.className = 'bg-red-500 text-white p-3 rounded-lg fixed top-4 right-4 z-50 shadow-lg';
+        document.body.appendChild(errorElement);
+    }
+    
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    
+    // ซ่อนอัตโนมัติหลังจาก 5 วินาที
+    setTimeout(() => {
+        errorElement.style.display = 'none';
+    }, 5000);
+}
+
+// แสดง/ซ่อนสถานะการโหลด
+function updateLoadingState(isLoading) {
+    gameState.isLoading = isLoading;
+    
+    // สร้างหรือปรับปรุงตัวแสดงสถานะการโหลด
+    let loaderElement = document.getElementById('game-loader');
+    
+    if (isLoading) {
+        if (!loaderElement) {
+            loaderElement = document.createElement('div');
+            loaderElement.id = 'game-loader';
+            loaderElement.className = 'fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loaderElement.innerHTML = `
+                <div class="bg-dark-secondary p-4 rounded-lg shadow-lg flex flex-col items-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-white">กำลังโหลด...</p>
+                </div>
+            `;
+            document.body.appendChild(loaderElement);
+        } else {
+            loaderElement.style.display = 'flex';
+        }
+    } else if (loaderElement) {
+        loaderElement.style.display = 'none';
+    }
+}
+
+// เล่นเสียงเอฟเฟกต์
+function playSound(soundName) {
+    if (!gameState.soundEnabled) return;
+    
+    try {
+        const sounds = {
+            drop: '/static/sounds/Audio/drop.mp3',
+            win: '/static/sounds/Audio/win.mp3',
+            lose: '/static/sounds/Audio/lose.mp3',
+            draw: '/static/sounds/Audio/draw.mp3'
+        };
+        
+        if (sounds[soundName]) {
+            const audio = new Audio(sounds[soundName]);
+            audio.play().catch(err => console.warn('Sound play error:', err));
+        }
+    } catch (error) {
+        console.warn(`Error playing sound ${soundName}:`, error);
+    }
 }
 
 // สร้างกระดานเกม
@@ -270,11 +414,11 @@ function loadGameStats() {
     .then(response => response.json())
     .then(data => {
         // อัปเดตแสดงสถิติ
-        totalGamesElement.textContent = data.total_games;
-        playerWinsElement.textContent = data.player_wins;
-        aiWinsElement.textContent = data.ai_wins;
-        drawsElement.textContent = data.draws;
-        winRateElement.textContent = data.win_rate + '%';
+        statsElements.totalGames.textContent = data.total_games;
+        statsElements.playerWins.textContent = data.player_wins;
+        statsElements.aiWins.textContent = data.ai_wins;
+        statsElements.draws.textContent = data.draws;
+        statsElements.winRate.textContent = data.win_rate + '%';
     })
     .catch(error => {
         console.error('Error loading game stats:', error);
@@ -351,6 +495,12 @@ function setupEventListeners() {
     aiModeSelect.addEventListener('change', () => {
         gameState.aiMode = parseInt(aiModeSelect.value);
     });
+    
+    // ปุ่มเปิด/ปิดแอนิเมชัน
+    document.getElementById('animation-toggle').addEventListener('click', toggleAnimations);
+    
+    // ปุ่มเปิด/ปิดเสียง
+    document.getElementById('sound-toggle').addEventListener('click', toggleSound);
 }
 
 // เริ่มต้นเกมเมื่อโหลดหน้าเสร็จ

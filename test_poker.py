@@ -1,5 +1,5 @@
 import sys
-sys.path.append('src/PlantvsAi_zombitx64/game')
+sys.path.append('game')
 
 from poker_model import PokerModel
 from poker import Card, PokerHand
@@ -8,7 +8,7 @@ import numpy as np
 def test_poker():
     # Create a model instance
     model = PokerModel()
-    model.load_model()
+    model.load_model(format='safetensors')  # Update the model loading to use safetensors format
     
     # Example cards
     player_cards = [Card('Hearts', 'A'), Card('Diamonds', 'K')]

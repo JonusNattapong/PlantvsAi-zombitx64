@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,11 +23,50 @@
                             DEFAULT: '#1a1a2e',
                             secondary: '#16213e',
                         },
+                        player: {
+                            one: '#ff4e50',   // สีแดง
+                            two: '#3b82f6',   // สีน้ำเงิน
+                        }
                     },
                 },
             },
         }
     </script>
+    <style>
+        @keyframes drop {
+            0% { transform: translateY(-300%); }
+            70% { transform: translateY(10%); }
+            85% { transform: translateY(-5%); }
+            100% { transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        
+        .animations-disabled * {
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        .disc-drop {
+            animation: drop 0.5s ease-in-out;
+        }
+        
+        .win-cell {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .player-1 {
+            background-color: #ff4e50;
+        }
+        
+        .player-2 {
+            background-color: #3b82f6;
+        }
+    </style>
 </head>
 <body class="font-kanit bg-gradient-to-br from-dark to-dark-secondary text-white min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -45,160 +84,104 @@
             <p class="text-xl text-gray-400">เกมต่อเรียง 4 ที่ท้าทายความคิด</p>
         </header>
 
+        <!-- Status Bar -->
+        <div class="text-center mb-6">
+            <div id="status" class="text-2xl font-medium bg-white/10 inline-block px-6 py-2 rounded-full"></div>
+        </div>
+
         <!-- Game Container -->
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Game Board -->
             <div class="flex-1">
                 <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
-                    <div class="grid grid-cols-7 gap-2 max-w-3xl mx-auto">
-                        <!-- Column Buttons -->
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                        <button class="w-full py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <!-- Game Cells - Row 1 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-
-                        <!-- Game Cells - Row 2 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-
-                        <!-- Game Cells - Row 3 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-
-                        <!-- Game Cells - Row 4 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-
-                        <!-- Game Cells - Row 5 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-
-                        <!-- Game Cells - Row 6 -->
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
-                        <div class="aspect-square bg-white/5 rounded-full"></div>
+                    <div id="game-board" class="grid grid-cols-7 gap-2 max-w-3xl mx-auto">
+                        <!-- Column Buttons - จะถูกสร้างด้วย JavaScript -->
+                        
+                        <!-- Game Cells - จะถูกสร้างด้วย JavaScript -->
                     </div>
                 </div>
             </div>
 
             <!-- Game Controls -->
             <div class="lg:w-80">
-                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
                     <h2 class="text-2xl font-bold mb-4">การตั้งค่า</h2>
                     
                     <!-- Difficulty Selection -->
                     <div class="mb-6">
                         <label class="block text-gray-400 mb-2">ระดับความยาก</label>
                         <div class="grid grid-cols-3 gap-2">
-                            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">ง่าย</button>
-                            <button class="px-4 py-2 rounded-lg bg-primary text-white transition-colors">ปานกลาง</button>
-                            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">ยาก</button>
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-algorithm="0">ง่าย</button>
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-primary text-white transition-colors selected" data-algorithm="1">ปานกลาง</button>
+                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-algorithm="2">ยาก</button>
                         </div>
                     </div>
 
                     <!-- Player Selection -->
                     <div class="mb-6">
-                        <label class="block text-gray-400 mb-2">เลือกฝั่ง</label>
+                        <label class="block text-gray-400 mb-2">เลือกผู้เล่นที่เริ่มก่อน</label>
                         <div class="grid grid-cols-2 gap-2">
-                            <button class="px-4 py-2 rounded-lg bg-primary hover:bg-white/10 transition-colors flex items-center justify-center">
-                                <div class="w-4 h-4 rounded-full bg-primary"></div>
+                            <button id="btn-player-first" class="px-4 py-2 rounded-lg bg-primary text-white transition-colors">
+                                <span class="w-3 h-3 inline-block bg-player-one rounded-full mr-2"></span>
+                                ผู้เล่น
                             </button>
-                            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center">
-                                <div class="w-4 h-4 rounded-full bg-primary-hover"></div>
+                            <button id="btn-ai-first" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                                <span class="w-3 h-3 inline-block bg-player-two rounded-full mr-2"></span>
+                                AI
                             </button>
                         </div>
                     </div>
 
                     <!-- Game Controls -->
                     <div class="space-y-3">
-                        <button class="w-full px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-lg font-medium transition-transform hover:scale-105">
+                        <button id="new-game" class="w-full px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-lg font-medium transition-transform hover:scale-105">
                             เริ่มเกมใหม่
                         </button>
-                        <button class="w-full px-6 py-3 bg-white/5 rounded-lg font-medium hover:bg-white/10 transition-colors">
-                            เล่นอีกครั้ง
+                        <button id="change-ai" class="w-full px-6 py-3 bg-white/5 rounded-lg font-medium hover:bg-white/10 transition-colors">
+                            เปลี่ยนระดับ AI
+                        </button>
+                        <button id="back-to-menu" class="w-full px-6 py-3 bg-white/5 rounded-lg font-medium hover:bg-white/10 transition-colors">
+                            กลับเมนูหลัก
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sound/Animation Controls -->
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
+                    <h2 class="text-2xl font-bold mb-4">ตั้งค่าเพิ่มเติม</h2>
+                    <div class="flex justify-between">
+                        <button id="animation-toggle" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            เอฟเฟกต์: เปิด
+                        </button>
+                        <button id="sound-toggle" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                            เสียง: เปิด
                         </button>
                     </div>
                 </div>
 
                 <!-- Game Stats -->
-                <div class="mt-6 bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
+                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
                     <h2 class="text-2xl font-bold mb-4">สถิติ</h2>
-                    <div class="space-y-2">
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">เกมทั้งหมด</span>
+                            <span id="total-games" class="font-bold">0</span>
+                        </div>
                         <div class="flex justify-between">
                             <span class="text-gray-400">ชนะ</span>
-                            <span class="font-bold text-green-400">0</span>
+                            <span id="player-wins" class="font-bold text-green-400">0</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-400">แพ้</span>
-                            <span class="font-bold text-red-400">0</span>
+                            <span id="ai-wins" class="font-bold text-red-400">0</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-400">เสมอ</span>
-                            <span class="font-bold text-yellow-400">0</span>
+                            <span id="draws" class="font-bold text-yellow-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">อัตราชนะ</span>
+                            <span id="win-rate" class="font-bold text-blue-400">0%</span>
                         </div>
                     </div>
                 </div>
@@ -206,6 +189,23 @@
         </div>
     </div>
 
-    <script src="/static/js/dist/connect_four.js" type="module"></script>
+    <!-- Winner Overlay -->
+    <div id="winner-overlay" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
+        <div class="bg-white/10 rounded-2xl p-8 backdrop-blur-lg text-center max-w-md w-full mx-4">
+            <h2 id="winner-text" class="text-3xl font-bold mb-6"></h2>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="play-again" class="px-6 py-3 bg-gradient-to-r from-primary to-primary-hover rounded-lg font-medium transition-transform hover:scale-105">
+                    เล่นอีกครั้ง
+                </button>
+                <button id="return-to-menu" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg font-medium transition-colors">
+                    กลับเมนูหลัก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Scripts -->
+    <script src="/static/game_utils.js"></script>
+    <script src="/static/connect_four.js"></script>
 </body>
 </html>

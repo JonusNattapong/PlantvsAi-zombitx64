@@ -7,38 +7,78 @@ let gameState = {
     gameOver: false,
     winner: null,
     playerTurn: true,
-    aiMode: 0,
+    aiMode: 1,                // เริ่มต้นที่ระดับปานกลาง
     selectedPiece: null,
     validMoves: {},
-    promotionMove: null
+    promotionMove: null,
+    playerColor: 'white',     // ผู้เล่นเริ่มต้นเป็นฝั่งขาว
+    check: false,             // สถานะถูกรุก
+    animationsEnabled: true,  // เปิดแอนิเมชันเริ่มต้น
+    soundEnabled: true,       // เปิดเสียงเริ่มต้น
+    moveHistory: [],          // ประวัติการเคลื่อนที่
+    capturedPieces: {         // หมากที่ถูกกิน
+        white: [],
+        black: []
+    }
+};
+
+// Sound effects
+const SOUNDS = {
+    move: '/static/sounds/move.mp3',
+    capture: '/static/sounds/capture.mp3',
+    check: '/static/sounds/check.mp3',
+    castle: '/static/sounds/castle.mp3',
+    promotion: '/static/sounds/promotion.mp3',
+    win: '/static/sounds/win.mp3',
+    lose: '/static/sounds/lose.mp3',
+    error: '/static/sounds/error.mp3',
+    select: '/static/sounds/select.mp3'
 };
 
 // DOM elements
-const gameBoard = document.getElementById('chess-board');
-const gameStatus = document.getElementById('game-status');
-const aiModeSelect = document.getElementById('ai-mode');
-const newGameBtn = document.getElementById('new-game-btn');
-const changeAiBtn = document.getElementById('change-ai-btn');
-const backToMenuBtn = document.getElementById('back-to-menu-btn');
-const playAgainBtn = document.getElementById('play-again-btn');
-const returnToMenuBtn = document.getElementById('return-to-menu-btn');
+const gameBoard = document.getElementById('game-board');
+const gameStatus = document.getElementById('status');
+const newGameBtn = document.getElementById('new-game');
+const changeAiBtn = document.getElementById('change-ai');
+const backToMenuBtn = document.getElementById('back-to-menu');
+const playAgainBtn = document.getElementById('play-again');
+const returnToMenuBtn = document.getElementById('return-to-menu');
 const winnerOverlay = document.getElementById('winner-overlay');
 const winnerText = document.getElementById('winner-text');
 const promotionOverlay = document.getElementById('promotion-overlay');
 const promotionOptions = document.getElementById('promotion-options');
+const moveHistory = document.getElementById('move-history');
+const animationToggle = document.getElementById('animation-toggle');
+const soundToggle = document.getElementById('sound-toggle');
+const playerWhiteBtn = document.getElementById('btn-player-white');
+const playerBlackBtn = document.getElementById('btn-player-black');
+const capturedWhitePieces = document.getElementById('captured-white');
+const capturedBlackPieces = document.getElementById('captured-black');
 
 // Statistics elements
-const totalGamesElement = document.getElementById('total-games');
-const playerWinsElement = document.getElementById('player-wins');
-const aiWinsElement = document.getElementById('ai-wins');
-const drawsElement = document.getElementById('draws');
-const winRateElement = document.getElementById('win-rate');
+const statsElements = {
+    totalGames: document.getElementById('total-games'),
+    playerWins: document.getElementById('player-wins'),
+    aiWins: document.getElementById('ai-wins'),
+    draws: document.getElementById('draws'),
+    winRate: document.getElementById('win-rate')
+};
 
 // Game configuration
 const BOARD_SIZE = 8;
 const SQUARE_SIZE = 60; // ขนาดของช่องบนกระดาน
 
-// Piece unicode symbols
+// ชื่อตัวหมาก
+const PIECE_NAMES = {
+    'P': 'เบี้ย',
+    'R': 'เรือ',
+    'N': 'ม้า',
+    'B': 'บิชอป',
+    'Q': 'ควีน',
+    'K': 'คิง'
+};
+
+// Unicode symbols ของตัวหมาก
 const PIECES = {
     'white': {
         'P': '♙',
@@ -58,192 +98,286 @@ const PIECES = {
     }
 };
 
-// เริ่มเกม
-function initGame() {
-    // สร้าง sessionId
-    gameState.sessionId = generateSessionId();
-    
-    // ตั้งค่าโหมด AI จาก URL parameters (ถ้ามี)
-    const urlParams = new URLSearchParams(window.location.search);
-    const aiParam = urlParams.get('ai');
-    if (aiParam !== null) {
-        gameState.aiMode = parseInt(aiParam);
-        aiModeSelect.value = aiParam;
-    }
-    
-    // เริ่มเกมใหม่
-    startNewGame();
-    
-    // โหลดสถิติ
-    loadGameStats();
-    
-    // ตั้งค่า event listeners
-    setupEventListeners();
-}
-
-// สร้าง sessionId แบบสุ่ม
-function generateSessionId() {
-    return Math.floor(Math.random() * 100000).toString();
-}
-
 // สร้างกระดานเกม
 function createBoard() {
+    if (!gameBoard) return;
+    
+    // ล้างกระดานเดิม
     gameBoard.innerHTML = '';
     
-    // สร้างตาราง 8x8
+    // สร้างกระดานใหม่
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
             const square = document.createElement('div');
-            square.className = 'square';
+            const isLight = (row + col) % 2 === 0;
+            
+            // กำหนด class ตามสีของช่อง (สลับสีขาว-ดำ)
+            square.className = `aspect-square relative ${isLight ? 'bg-board-light' : 'bg-board-dark'}`;
             square.dataset.row = row;
             square.dataset.col = col;
             
-            // กำหนด class light หรือ dark ตามตำแหน่ง
-            const isLight = (row + col) % 2 === 0;
-            square.classList.add(isLight ? 'light' : 'dark');
-            
-            // เพิ่ม event listener
+            // เพิ่ม event listener สำหรับการคลิก
             square.addEventListener('click', handleSquareClick);
             
-            // ถ้ามีข้อมูลกระดาน ให้แสดงหมาก
-            if (gameState.board && gameState.board[row][col]) {
-                const pieceElement = createPieceElement(gameState.board[row][col]);
-                square.appendChild(pieceElement);
+            // แสดงชื่อตำแหน่ง (เช่น A1, B2, etc.)
+            if (row === 7) {
+                const colLabel = document.createElement('div');
+                colLabel.className = 'absolute bottom-0 right-1 text-xs opacity-60';
+                colLabel.textContent = String.fromCharCode(65 + col); // A, B, C, ...
+                square.appendChild(colLabel);
             }
             
+            if (col === 0) {
+                const rowLabel = document.createElement('div');
+                rowLabel.className = 'absolute top-0 left-1 text-xs opacity-60';
+                rowLabel.textContent = 8 - row; // 8, 7, 6, ...
+                square.appendChild(rowLabel);
+            }
+            
+            // เพิ่มช่องลงในกระดาน
             gameBoard.appendChild(square);
         }
     }
+    
+    // สร้างหมากบนกระดาน
+    if (gameState.board) {
+        updateBoard();
+    }
 }
 
-// Create a piece element from piece data
-function createPieceElement(pieceData) {
+// สร้างอิลิเมนท์ของตัวหมาก
+function createPieceElement(piece, color) {
+    if (!piece || !color) return null;
+    
     const pieceElement = document.createElement('div');
-    pieceElement.className = `piece ${pieceData.color}`;
+    pieceElement.className = `piece piece-${color.toLowerCase()}`;
     
-    // Add piece symbol
-    pieceElement.textContent = PIECES[pieceData.color][pieceData.piece];
+    // ใส่สัญลักษณ์ Unicode ของตัวหมาก
+    pieceElement.innerHTML = PIECES[color.toLowerCase()][piece];
     
-    // If we have SVG pieces, use them instead
-    const pieceImg = document.createElement('img');
-    pieceImg.src = `/static/svg_cards/${pieceData.piece}_${pieceData.color}.svg`;
-    pieceImg.alt = `${pieceData.piece} of ${pieceData.color}`;
-    pieceImg.onerror = () => {
-        // If SVG loading fails, use the text fallback (already created)
-        pieceImg.style.display = 'none';
-    };
-    pieceImg.style.width = '100%';
-    pieceImg.style.height = '100%';
-    pieceImg.style.position = 'absolute';
-    pieceImg.style.top = '0';
-    pieceImg.style.left = '0';
-    
-    pieceElement.appendChild(pieceImg);
+    // ข้อมูลของหมาก
+    pieceElement.dataset.piece = piece;
+    pieceElement.dataset.color = color.toLowerCase();
     
     return pieceElement;
 }
 
 // อัปเดตกระดานจากสถานะเกม
 function updateBoard() {
-    // ล้างการเลือกทั้งหมด
-    clearSelection();
+    if (!gameBoard || !gameState.board) return;
     
-    // อัปเดตตำแหน่งหมากทั้งหมด
+    // Reset all squares
+    const squares = gameBoard.querySelectorAll('div[data-row]');
+    squares.forEach(square => {
+        // เก็บ class สีของช่องไว้
+        const isLight = square.classList.contains('bg-board-light');
+        const row = parseInt(square.dataset.row);
+        const col = parseInt(square.dataset.col);
+        
+        // ลบ class พิเศษเดิม
+        square.className = `aspect-square relative ${isLight ? 'bg-board-light' : 'bg-board-dark'}`;
+        
+        // ลบหมากเดิม แต่เก็บป้ายชื่อไว้
+        const labels = Array.from(square.children).filter(
+            child => child.classList.contains('text-xs')
+        );
+        square.innerHTML = '';
+        
+        // ใส่ป้ายชื่อกลับคืน
+        labels.forEach(label => square.appendChild(label));
+        
+        // เพิ่ม class ถ้าเป็นช่องที่ถูกเลือก
+        if (gameState.selectedPiece && 
+            gameState.selectedPiece.row === row && 
+            gameState.selectedPiece.col === col) {
+            square.classList.add('piece-selected');
+        }
+        
+        // ไฮไลท์ช่องการเคลื่อนที่ที่ถูกต้อง
+        if (gameState.selectedPiece && gameState.validMoves) {
+            for (const moveKey in gameState.validMoves) {
+                const [moveRow, moveCol] = moveKey.split(',').map(Number);
+                if (row === moveRow && col === moveCol) {
+                    square.classList.add('valid-move');
+                    
+                    // ใส่จุดแสดงช่องที่สามารถเดินได้
+                    const moveIndicator = document.createElement('div');
+                    moveIndicator.className = 'move-indicator';
+                    square.appendChild(moveIndicator);
+                }
+            }
+        }
+        
+        // ไฮไลท์ช่องถ้าคิงถูกรุก
+        if (gameState.check) {
+            const piece = gameState.board[row][col];
+            if (piece && piece.type === 'K' && 
+                ((gameState.playerTurn && piece.color === gameState.playerColor) || 
+                 (!gameState.playerTurn && piece.color !== gameState.playerColor))) {
+                square.classList.add('check');
+            }
+        }
+    });
+    
+    // วางหมากตามสถานะเกม
     for (let row = 0; row < BOARD_SIZE; row++) {
         for (let col = 0; col < BOARD_SIZE; col++) {
-            const square = getSquare(row, col);
-            
-            // ลบหมากเก่าออก
-            while (square.firstChild) {
-                square.removeChild(square.firstChild);
+            const piece = gameState.board[row][col];
+            if (piece) {
+                const square = getSquare(row, col);
+                if (square) {
+                    const pieceElement = createPieceElement(piece.type, piece.color);
+                    if (pieceElement) {
+                        square.appendChild(pieceElement);
+                    }
+                }
             }
-            
-            // ถ้ามีหมากในตำแหน่งนี้ ให้สร้างใหม่
-            if (gameState.board[row][col]) {
-                const pieceElement = createPieceElement(gameState.board[row][col]);
-                square.appendChild(pieceElement);
-            }
+        }
+    }
+    
+    // อัปเดตหมากที่ถูกจับ
+    updateCapturedPieces();
+    
+    // ถ้าแอนิเมชันถูกปิด ให้เพิ่ม class ให้กับ body
+    document.body.classList.toggle('animations-disabled', !gameState.animationsEnabled);
+}
+
+// อัปเดตหมากที่ถูกจับ
+function updateCapturedPieces() {
+    if (capturedWhitePieces && capturedBlackPieces) {
+        // ล้างหมากที่ถูกจับก่อนหน้า
+        capturedWhitePieces.innerHTML = '';
+        capturedBlackPieces.innerHTML = '';
+        
+        // แสดงหมากขาวที่ถูกจับ
+        if (gameState.capturedPieces.white.length > 0) {
+            gameState.capturedPieces.white.forEach(piece => {
+                const pieceElement = createPieceElement(piece, 'white');
+                if (pieceElement) {
+                    pieceElement.classList.add('captured-piece');
+                    capturedWhitePieces.appendChild(pieceElement);
+                }
+            });
+        } else {
+            capturedWhitePieces.innerHTML = '<div class="text-gray-400 text-sm">ยังไม่มีหมากที่ถูกจับ</div>';
+        }
+        
+        // แสดงหมากดำที่ถูกจับ
+        if (gameState.capturedPieces.black.length > 0) {
+            gameState.capturedPieces.black.forEach(piece => {
+                const pieceElement = createPieceElement(piece, 'black');
+                if (pieceElement) {
+                    pieceElement.classList.add('captured-piece');
+                    capturedBlackPieces.appendChild(pieceElement);
+                }
+            });
+        } else {
+            capturedBlackPieces.innerHTML = '<div class="text-gray-400 text-sm">ยังไม่มีหมากที่ถูกจับ</div>';
         }
     }
 }
 
 // อัปเดตข้อความสถานะเกม
 function updateGameStatus() {
+    if (!gameStatus) return;
+    
+    let statusText = '';
+    
     if (gameState.gameOver) {
-        if (gameState.winner === 'white') {
-            gameStatus.textContent = 'คุณชนะ!';
-            showWinnerOverlay('คุณชนะ! ยินดีด้วย!');
-        } else if (gameState.winner === 'black') {
-            gameStatus.textContent = 'AI ชนะ!';
-            showWinnerOverlay('AI ชนะ! ลองอีกครั้ง!');
+        if (gameState.winner === 'player') {
+            statusText = '<span class="text-green-500">คุณชนะ!</span> ';
+        } else if (gameState.winner === 'ai') {
+            statusText = '<span class="text-red-500">AI ชนะ!</span> ';
         } else {
-            gameStatus.textContent = 'เกมเสมอ!';
-            showWinnerOverlay('เกมจบลงด้วยการเสมอ!');
+            statusText = '<span class="text-yellow-500">เสมอ!</span> ';
         }
     } else {
-        if (gameState.playerTurn) {
-            if (gameState.selectedPiece) {
-                gameStatus.textContent = 'เลือกตำแหน่งที่ต้องการเดิน';
+        if (gameState.check) {
+            if (gameState.playerTurn) {
+                statusText = '<span class="text-orange-500">คุณถูกรุก! </span> กรุณาป้องกันคิง';
             } else {
-                gameStatus.textContent = 'ตาของคุณ! เลือกหมากที่ต้องการเคลื่อนย้าย';
+                statusText = '<span class="text-blue-500">AI ถูกรุก! </span> รอ AI ทำการป้องกัน';
             }
         } else {
-            gameStatus.textContent = 'AI กำลังคิด...';
+            if (gameState.playerTurn) {
+                statusText = 'ตาของคุณ';
+            } else {
+                statusText = 'AI กำลังคิด...';
+            }
         }
     }
+    
+    gameStatus.innerHTML = statusText;
 }
 
 // แสดง overlay ผู้ชนะ
 function showWinnerOverlay(message) {
-    winnerText.textContent = message;
-    winnerOverlay.classList.add('active');
+    if (winnerText && winnerOverlay) {
+        winnerText.innerHTML = message;
+        winnerOverlay.classList.remove('hidden');
+    }
 }
 
 // ซ่อน overlay ผู้ชนะ
 function hideWinnerOverlay() {
-    winnerOverlay.classList.remove('active');
+    if (winnerOverlay) {
+        winnerOverlay.classList.add('hidden');
+    }
 }
 
 // แสดง overlay สำหรับเลือกการเลื่อนขั้นของเบี้ย
 function showPromotionOverlay(from_row, from_col, to_row, to_col) {
+    if (!promotionOverlay || !promotionOptions) return;
+    
     // บันทึกข้อมูลการเคลื่อนที่
     gameState.promotionMove = {
-        from_row: from_row,
-        from_col: from_col,
-        to_row: to_row,
-        to_col: to_col
+        from_row,
+        from_col,
+        to_row,
+        to_col
     };
     
-    // แสดงตัวเลือก
-    promotionOverlay.classList.add('active');
-    
-    // สร้างตัวเลือก
+    // ล้างตัวเลือกเดิม
     promotionOptions.innerHTML = '';
-    const options = ['Q', 'R', 'N', 'B'];
     
-    options.forEach(piece => {
-        const option = document.createElement('div');
-        option.className = 'promotion-option';
-        option.textContent = PIECES['white'][piece];
-        option.dataset.piece = piece;
-        option.addEventListener('click', () => {
-            handlePromotion(piece);
-        });
-        promotionOptions.appendChild(option);
+    // สร้างตัวเลือกสำหรับการเลื่อนขั้น
+    const pieces = ['Q', 'R', 'B', 'N']; // ควีน, เรือ, บิชอป, ม้า
+    const color = gameState.playerColor;
+    
+    pieces.forEach(piece => {
+        const pieceButton = document.createElement('div');
+        pieceButton.className = 'promotion-piece';
+        pieceButton.innerHTML = PIECES[color][piece];
+        pieceButton.dataset.piece = piece;
+        
+        // ชื่อเต็มของตัวหมาก
+        const pieceName = document.createElement('div');
+        pieceName.className = 'piece-name';
+        pieceName.textContent = PIECE_NAMES[piece];
+        pieceButton.appendChild(pieceName);
+        
+        pieceButton.addEventListener('click', () => handlePromotion(piece));
+        promotionOptions.appendChild(pieceButton);
     });
+    
+    // แสดง overlay
+    promotionOverlay.classList.remove('hidden');
 }
 
 // ซ่อน overlay เลือกการเลื่อนขั้น
 function hidePromotionOverlay() {
-    promotionOverlay.classList.remove('active');
+    if (promotionOverlay) {
+        promotionOverlay.classList.add('hidden');
+    }
+    
+    // ล้างข้อมูลการเคลื่อนที่
     gameState.promotionMove = null;
 }
 
 // จัดการการเลื่อนขั้นของเบี้ย
 function handlePromotion(piece) {
-    if (!gameState.promotionMove) {
-        return;
-    }
+    // ตรวจสอบว่ามีข้อมูลการเคลื่อนที่หรือไม่
+    if (!gameState.promotionMove) return;
     
     const { from_row, from_col, to_row, to_col } = gameState.promotionMove;
     
@@ -252,6 +386,171 @@ function handlePromotion(piece) {
     
     // ซ่อน overlay
     hidePromotionOverlay();
+    
+    // เล่นเสียงเลื่อนขั้น
+    playSound('promotion');
+}
+
+// รับช่องจากตำแหน่ง
+function getSquare(row, col) {
+    return gameBoard ? gameBoard.querySelector(`[data-row="${row}"][data-col="${col}"]`) : null;
+}
+
+// เริ่มเกม
+function initGame() {
+    try {
+        console.log('Initializing Chess game...');
+        
+        // สร้าง sessionId
+        gameState.sessionId = generateSessionId();
+        
+        // ตั้งค่าโหมด AI จาก URL parameters (ถ้ามี)
+        const urlParams = new URLSearchParams(window.location.search);
+        const aiParam = urlParams.get('ai');
+        if (aiParam !== null) {
+            gameState.aiMode = parseInt(aiParam);
+        }
+        
+        // โหลดค่าพรีเฟอเรนซ์จาก localStorage
+        loadPreferences();
+        
+        // เริ่มเกมใหม่
+        startNewGame();
+        
+        // โหลดสถิติ
+        loadGameStats();
+        
+        // ตั้งค่า event listeners
+        setupEventListeners();
+        
+        console.log('Chess game initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Chess game:', error);
+        showErrorMessage('เกิดข้อผิดพลาดในการโหลดเกม โปรดรีเฟรชหน้า');
+    }
+}
+
+// โหลดค่าพรีเฟอเรนซ์จาก localStorage
+function loadPreferences() {
+    // โหลดการตั้งค่าแอนิเมชัน
+    if (localStorage.getItem('chessAnimationsEnabled') !== null) {
+        gameState.animationsEnabled = localStorage.getItem('chessAnimationsEnabled') === 'true';
+        updateAnimationToggle();
+    }
+    
+    // โหลดการตั้งค่าเสียง
+    if (localStorage.getItem('chessSoundEnabled') !== null) {
+        gameState.soundEnabled = localStorage.getItem('chessSoundEnabled') === 'true';
+        updateSoundToggle();
+    }
+}
+
+// อัปเดตปุ่มเปิด/ปิดแอนิเมชัน
+function updateAnimationToggle() {
+    if (animationToggle) {
+        animationToggle.textContent = gameState.animationsEnabled ? 
+            ' เอฟเฟกต์: เปิด' : ' เอฟเฟกต์: ปิด';
+    }
+}
+
+// อัปเดตปุ่มเปิด/ปิดเสียง
+function updateSoundToggle() {
+    if (soundToggle) {
+        soundToggle.textContent = gameState.soundEnabled ? '' : '';
+    }
+}
+
+// เปิด/ปิดแอนิเมชัน
+function toggleAnimations() {
+    gameState.animationsEnabled = !gameState.animationsEnabled;
+    localStorage.setItem('chessAnimationsEnabled', gameState.animationsEnabled);
+    updateAnimationToggle();
+    document.body.classList.toggle('animations-disabled', !gameState.animationsEnabled);
+}
+
+// เปิด/ปิดเสียง
+function toggleSound() {
+    gameState.soundEnabled = !gameState.soundEnabled;
+    localStorage.setItem('chessSoundEnabled', gameState.soundEnabled);
+    updateSoundToggle();
+}
+
+// สร้าง sessionId แบบสุ่มที่มีความปลอดภัยมากขึ้น
+function generateSessionId() {
+    const timestamp = new Date().getTime().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 10);
+    return `${timestamp}-${randomPart}`;
+}
+
+// แสดงข้อความผิดพลาด
+function showErrorMessage(message) {
+    try {
+        if (typeof makeApiRequest !== 'undefined' && typeof showMessage !== 'undefined') {
+            // ใช้ฟังก์ชั่นจาก game_utils.js ถ้ามี
+            showMessage(message, 'error');
+        } else {
+            // สร้าง toast notification
+            const toastElement = document.createElement('div');
+            toastElement.className = 'fixed top-4 right-4 bg-red-500 text-white p-3 rounded-lg shadow-lg z-50';
+            toastElement.textContent = message;
+            document.body.appendChild(toastElement);
+            
+            // ซ่อนอัตโนมัติหลังจาก 5 วินาที
+            setTimeout(() => {
+                document.body.removeChild(toastElement);
+            }, 5000);
+        }
+    } catch (error) {
+        console.error('Error showing message:', error);
+        alert(message);
+    }
+}
+
+// แสดง/ซ่อนสถานะการโหลด
+function updateLoadingState(isLoading) {
+    try {
+        if (typeof makeApiRequest !== 'undefined' && typeof updateLoadingState !== 'undefined') {
+            // ใช้ฟังก์ชั่นจาก game_utils.js ถ้ามี
+            window.updateLoadingState(isLoading);
+        } else {
+            // สร้างหรือปรับปรุงตัวแสดงสถานะการโหลด
+            let loaderElement = document.getElementById('chess-loader');
+            
+            if (isLoading) {
+                if (!loaderElement) {
+                    loaderElement = document.createElement('div');
+                    loaderElement.id = 'chess-loader';
+                    loaderElement.className = 'fixed top-0 left-0 right-0 bottom-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                    loaderElement.innerHTML = `
+                        <div class="bg-dark-secondary p-4 rounded-lg shadow-lg flex flex-col items-center">
+                            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                            <p class="mt-2 text-white">กำลังโหลด...</p>
+                        </div>
+                    `;
+                    document.body.appendChild(loaderElement);
+                } else {
+                    loaderElement.style.display = 'flex';
+                }
+            } else if (loaderElement) {
+                loaderElement.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error updating loading state:', error);
+    }
+}
+
+// เล่นเสียงเอฟเฟกต์
+function playSound(soundName) {
+    // ตรวจสอบการตั้งค่าเสียง
+    if (!gameState.soundEnabled) return;
+    
+    try {
+        const audio = new Audio(SOUNDS[soundName]);
+        audio.play().catch(err => console.warn('Sound play error:', err));
+    } catch (error) {
+        console.warn(`Error playing sound ${soundName}:`, error);
+    }
 }
 
 // เริ่มเกมใหม่
@@ -383,7 +682,7 @@ function clearSelection() {
 
 // รับช่องจากตำแหน่ง
 function getSquare(row, col) {
-    return document.querySelector(`.square[data-row="${row}"][data-col="${col}"]`);
+    return gameBoard ? gameBoard.querySelector(`[data-row="${row}"][data-col="${col}"]`) : null;
 }
 
 // ขอการเคลื่อนที่ที่ถูกต้องจาก API
@@ -527,11 +826,11 @@ function loadGameStats() {
     .then(response => response.json())
     .then(data => {
         // อัปเดตแสดงสถิติ
-        totalGamesElement.textContent = data.total_games;
-        playerWinsElement.textContent = data.player_wins;
-        aiWinsElement.textContent = data.ai_wins;
-        drawsElement.textContent = data.draws;
-        winRateElement.textContent = data.win_rate + '%';
+        statsElements.totalGames.textContent = data.total_games;
+        statsElements.playerWins.textContent = data.player_wins;
+        statsElements.aiWins.textContent = data.ai_wins;
+        statsElements.draws.textContent = data.draws;
+        statsElements.winRate.textContent = data.win_rate + '%';
     })
     .catch(error => {
         console.error('Error loading game stats:', error);
@@ -607,6 +906,20 @@ function setupEventListeners() {
     // ปุ่มเลือกโหมด AI
     aiModeSelect.addEventListener('change', () => {
         gameState.aiMode = parseInt(aiModeSelect.value);
+    });
+    
+    // ปุ่มเปิด/ปิดแอนิเมชัน
+    animationToggle.addEventListener('click', toggleAnimations);
+    
+    // ปุ่มเปิด/ปิดเสียง
+    soundToggle.addEventListener('click', toggleSound);
+    
+    // ปุ่มเลือกสีของผู้เล่น
+    playerWhiteBtn.addEventListener('click', () => {
+        gameState.playerColor = 'white';
+    });
+    playerBlackBtn.addEventListener('click', () => {
+        gameState.playerColor = 'black';
     });
 }
 
