@@ -242,10 +242,13 @@ function playSound(soundName) {
         'win': '/static/sounds/game_win.mp3',
         'lose': '/static/sounds/game_lose.mp3'
     };
-    
+
     try {
         // First try using SoundEffects manager if available
         if (window.SoundEffects && typeof window.SoundEffects.play === 'function') {
+            if (soundName === 'move') { // ไม่เล่นเสียง move.mp3
+                return;
+            }
             // Map local sound names to global sound names
             const globalSoundMap = {
                 'win': 'game_win',
@@ -448,6 +451,7 @@ function showWinnerOverlay(message) {
     if (winnerText && winnerOverlay) {
         winnerText.innerHTML = message;
         winnerOverlay.classList.remove('hidden');
+        winnerOverlay.classList.add('flex', 'items-center', 'justify-center');
     }
 }
 

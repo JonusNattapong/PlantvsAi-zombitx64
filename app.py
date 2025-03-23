@@ -251,24 +251,18 @@ def checkers_valid_moves():
     row = data.get('row')
     col = data.get('col')
     
-    # ใช้ตรรกะพื้นฐานสำหรับการเคลื่อนที่ที่ถูกต้อง
-    # ในระบบจริงนี่ควรจะมาจากเอนจิ้นเกม
+    # ดึงข้อมูลเกมจาก session
+    game_data = session.get('checkers_game', {})
+    board = game_data.get('board', [[0 for _ in range(8)] for _ in range(8)])
+    is_player_turn = game_data.get('player_turn', True)
+    
+    # ใช้ฟังก์ชัน get_valid_moves ที่มีการตรวจสอบกฎการเดินที่ถูกต้อง
+    valid_moves_list = get_valid_moves(board, row, col, is_player_turn)
+    
+    # แปลงรูปแบบข้อมูลให้ตรงกับที่ frontend ต้องการ
     valid_moves = {}
-    
-    # จำลองการคำนวณการเคลื่อนที่ที่ถูกต้อง
-    # เพิ่มการเคลื่อนที่ไปทางซ้ายและขวาเป็นระยะ 1 หน่วย
-    if row > 0:  # สามารถเคลื่อนที่ขึ้นได้
-        if col > 0:  # ซ้ายบน
-            valid_moves[f"{row-1},{col-1}"] = {"row": row-1, "col": col-1}
-        if col < 7:  # ขวาบน
-            valid_moves[f"{row-1},{col+1}"] = {"row": row-1, "col": col+1}
-    
-    # ถ้าเป็นคิง สามารถเคลื่อนที่ลงได้
-    if row < 7:  # สามารถเคลื่อนที่ลงได้
-        if col > 0:  # ซ้ายล่าง
-            valid_moves[f"{row+1},{col-1}"] = {"row": row+1, "col": col-1}
-        if col < 7:  # ขวาล่าง
-            valid_moves[f"{row+1},{col+1}"] = {"row": row+1, "col": col+1}
+    for move_row, move_col in valid_moves_list:
+        valid_moves[f"{move_row},{move_col}"] = {"row": move_row, "col": move_col}
     
     return jsonify({
         'valid_moves': valid_moves
@@ -295,7 +289,6 @@ def checkers_move():
     game_data = session.get('checkers_game', {})
     board = game_data.get('board', [[0 for _ in range(8)] for _ in range(8)])
     
-    # ทำการเคลื่อนย้ายโดยไม่มีการตรวจสอบกฎที่ซับซ้อน
     # บันทึกค่าหมากเดิมก่อนเคลื่อนที่
     moved_piece = board[from_row][from_col]
     
@@ -303,7 +296,7 @@ def checkers_move():
     board[to_row][to_col] = moved_piece
     board[from_row][from_col] = 0  # ตำแหน่งเดิมว่าง
     
-    # ตรวจสอบการเลื่อนขั้นเป็นคิง (ถ้าหมากถึงขอบกระดานฝั่งตรงข้าม)
+    # ตรวจสอบการเลื่อนขั้นเป็นคิง
     if moved_piece == 1 and to_row == 0:  # หมากขาวถึงแถวบนสุด
         board[to_row][to_col] = 3  # เลื่อนขั้นเป็นคิงขาว
     elif moved_piece == 2 and to_row == 7:  # หมากดำถึงแถวล่างสุด
@@ -311,13 +304,10 @@ def checkers_move():
     
     # ตรวจสอบว่ามีการกินหมากหรือไม่
     is_capture = False
-    # ตรวจสอบแบบง่ายๆ ถ้าระยะทางมากกว่า 1 แถว ถือว่ามีการกิน
     row_diff = abs(to_row - from_row)
     if row_diff > 1:
-        # หาตำแหน่งหมากที่ถูกกิน
         middle_row = (from_row + to_row) // 2
         middle_col = (from_col + to_col) // 2
-        # ทำการกิน (ลบหมากที่ถูกกิน)
         if board[middle_row][middle_col] != 0:
             board[middle_row][middle_col] = 0
             is_capture = True
@@ -325,18 +315,23 @@ def checkers_move():
     # สลับเทิร์นผู้เล่น
     game_data['player_turn'] = not game_data['player_turn']
     
-    # บันทึกกระดานใหม่ลงในเซสชัน
+    # บันทึกกระดานและตรวจสอบสถานะเกม
     game_data['board'] = board
+    game_over, winner = check_game_status(board, game_data['player_turn'])
+    game_data['game_over'] = game_over
+    game_data['winner'] = winner
+    
+    # บันทึกสถานะเกมลงในเซสชัน
     session['checkers_game'] = game_data
     
+    # ส่งผลลัพธ์กลับ
     return jsonify({
         'board': board,
         'captured': is_capture,
-        'game_over': False,
-        'winner': None,
+        'game_over': game_over,
+        'winner': winner,
         'player_turn': game_data['player_turn']
     })
-
 @app.route('/api/checkers/new_game', methods=['POST'])
 def checkers_new_game():
     """เริ่มเกมหมากฮอสใหม่"""
@@ -384,13 +379,117 @@ def checkers_new_game():
         'session_id': session_id
     })
 
+def get_valid_moves(board, row, col, is_player_turn):
+    """
+    Returns list of valid moves (row, col) for a piece at the given position
+    """
+    valid_moves = []
+    
+    # Determine which pieces belong to the current player
+    player_color = session.get('checkers_game', {}).get('player_color', 'white')
+    if is_player_turn:
+        # Player's turn
+        player_pieces = [1, 3] if player_color == 'white' else [2, 4]
+    else:
+        # AI's turn
+        player_pieces = [2, 4] if player_color == 'white' else [1, 3]
+    
+    # Check if there's a piece at the position and if it belongs to the current player
+    if board[row][col] == 0 or board[row][col] not in player_pieces:
+        return []
+    
+    piece = board[row][col]
+    is_king = piece in [3, 4]  # Kings can move in any direction
+    
+    # Determine movement direction
+    directions = []
+    if is_king or (piece in [1, 3] and player_color == 'white') or (piece in [2, 4] and player_color != 'white'):
+        directions.append(-1)  # Can move up
+    
+    if is_king or (piece in [2, 4] and player_color == 'white') or (piece in [1, 3] and player_color != 'white'):
+        directions.append(1)  # Can move down
+    
+    # Check for normal moves (1 step)
+    for d_row in directions:
+        for d_col in [-1, 1]:  # Can move diagonally left or right
+            new_row = row + d_row
+            new_col = col + d_col
+            
+            if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == 0:
+                valid_moves.append((new_row, new_col))
+    
+    # Check for capture moves (2 steps)
+    for d_row in directions:
+        for d_col in [-1, 1]:
+            new_row = row + d_row * 2
+            new_col = col + d_col * 2
+            
+            if 0 <= new_row < 8 and 0 <= new_col < 8 and board[new_row][new_col] == 0:
+                middle_row = row + d_row
+                middle_col = col + d_col
+                
+                if 0 <= middle_row < 8 and 0 <= middle_col < 8:
+                    middle_piece = board[middle_row][middle_col]
+                    if middle_piece != 0 and middle_piece not in player_pieces:
+                        valid_moves.append((new_row, new_col))
+    
+    return valid_moves
+
+def check_game_status(board, is_player_turn):
+    """
+    Check if the game is over and who the winner is
+    Returns: (is_game_over, winner)
+    """
+    # Check if there are any pieces left for each player
+    player_pieces = 0
+    ai_pieces = 0
+    
+    player_color = session.get('checkers_game', {}).get('player_color', 'white')
+    player_piece_values = [1, 3] if player_color == 'white' else [2, 4]
+    ai_piece_values = [2, 4] if player_color == 'white' else [1, 3]
+    
+    for row in range(8):
+        for col in range(8):
+            if board[row][col] in player_piece_values:
+                player_pieces += 1
+            elif board[row][col] in ai_piece_values:
+                ai_pieces += 1
+    
+    # If one player has no pieces, they lose the game
+    if player_pieces == 0:
+        return True, 'ai'  # Player has no pieces, so AI wins
+    if ai_pieces == 0:
+        return True, 'player'  # AI has no pieces, so Player wins
+    
+    # Check if the current player has any valid moves
+    has_valid_moves = False
+    
+    for row in range(8):
+        for col in range(8):
+            piece_values = player_piece_values if is_player_turn else ai_piece_values
+            if board[row][col] in piece_values:
+                moves = get_valid_moves(board, row, col, is_player_turn)
+                if moves:
+                    has_valid_moves = True
+                    break
+        if has_valid_moves:
+            break
+    
+    # If the current player has no valid moves, they lose
+    if not has_valid_moves:
+        return True, 'ai' if is_player_turn else 'player'
+    
+    # Game continues
+    return False, None
+
 @app.route('/api/checkers/ai_move', methods=['POST'])
 def checkers_ai_move():
+    """AI เลือกเดินหมากและตรวจสอบการแพ้ชนะ"""
     # ตรวจสอบว่ามีข้อมูลเกมในเซสชันหรือไม่
     if 'checkers_game' not in session:
         return jsonify({'error': 'No active game'}), 400
     
-    # ดึงกระดานปัจจุบันจาก session
+    # ดึงข้อมูลเกมจาก session
     game_data = session.get('checkers_game', {})
     board = game_data.get('board', [[0 for _ in range(8)] for _ in range(8)])
     player_turn = game_data.get('player_turn', True)
@@ -399,152 +498,97 @@ def checkers_ai_move():
     if player_turn:
         return jsonify({'error': 'Not AI turn'}), 400
     
-    # ในที่นี้จะใช้การเคลื่อนที่แบบสุ่มอย่างง่าย
-    # หาหมากทั้งหมดของ AI
-    ai_pieces = []
+    # ตรวจสอบเงื่อนไขการจบเกม
+    game_over, winner = check_game_status(board, False)  # False = AI turn
+    if game_over:
+        game_data['game_over'] = True
+        game_data['winner'] = winner
+        session['checkers_game'] = game_data
+        return jsonify({
+            'board': board,
+            'game_over': True,
+            'winner': winner,
+            'player_turn': True  # กลับไปที่ผู้เล่นเพื่อให้เห็นผลการเล่น
+        })
+    
+    # หาการเดินที่เป็นไปได้ทั้งหมดของ AI
+    ai_moves = []  # เก็บ tuple ของ (from_pos, to_pos, is_capture)
     player_color = game_data.get('player_color', 'white')
     ai_pieces_values = [2, 4] if player_color == 'white' else [1, 3]
     
+    # 1. หาหมากและการเดินที่เป็นไปได้ทั้งหมดของ AI
     for row in range(8):
         for col in range(8):
             if board[row][col] in ai_pieces_values:
-                ai_pieces.append((row, col))
+                moves = get_valid_moves(board, row, col, False)  # False = AI turn
+                for move in moves:
+                    to_row, to_col = move
+                    # ตรวจสอบว่าเป็นการกินหรือไม่
+                    is_capture = abs(to_row - row) > 1
+                    ai_moves.append(((row, col), (to_row, to_col), is_capture))
     
-    # สุ่มเลือกหมาก AI
-    if not ai_pieces:
-        # ถ้าไม่มีหมาก AI ให้ผู้เล่นชนะ
+    # 2. ตรวจสอบว่ามีการเดินที่เป็นไปได้หรือไม่
+    if not ai_moves:
+        # ถ้าไม่มีการเดินที่เป็นไปได้ ผู้เล่นชนะ
         game_data['game_over'] = True
         game_data['winner'] = 'player'
         session['checkers_game'] = game_data
-        
         return jsonify({
             'board': board,
-            'move': False,
             'game_over': True,
             'winner': 'player',
             'player_turn': True
         })
+
+    # 3. เลือกการเดินที่ดีที่สุด (ให้ความสำคัญกับการกินก่อน)
+    capture_moves = [move for move in ai_moves if move[2]]
+    selected_move = None
+    if capture_moves:  # ถ้ามีการเดินที่สามารถกินได้
+        selected_move = random.choice(capture_moves)
+    else:  # ถ้าไม่มีการเดินที่สามารถกินได้
+        selected_move = random.choice(ai_moves)
     
-    # สุ่มเลือกหมาก AI และทดลองเคลื่อนที่
-    max_attempts = 30
-    for _ in range(max_attempts):
-        # สุ่มเลือกหมาก
-        from_row, from_col = random.choice(ai_pieces)
-        piece = board[from_row][from_col]
-        
-        # หาทิศทางที่สามารถเคลื่อนที่ได้
-        directions = []
-        is_king = (piece == 3 or piece == 4)
-        
-        # ทิศทางที่สามารถเคลื่อนที่ได้ ขึ้นอยู่กับว่าเป็นหมากธรรมดาหรือคิง
-        if is_king:
-            # คิงเคลื่อนที่ได้ทุกทิศทาง
-            directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]  # ทแยงซ้ายบน, ทแยงขวาบน, ทแยงซ้ายล่าง, ทแยงขวาล่าง
-        else:
-            # หมากธรรมดาเคลื่อนที่ได้เฉพาะทิศทางล่าง (สำหรับหมากขาว) หรือบน (สำหรับหมากดำ)
-            if piece == 2:  # หมากดำ (เดินลง)
-                directions = [(1, -1), (1, 1)]  # ทแยงซ้ายล่าง, ทแยงขวาล่าง
-            else:  # หมากขาว (เดินขึ้น)
-                directions = [(-1, -1), (-1, 1)]  # ทแยงซ้ายบน, ทแยงขวาบน
-        
-        # สุ่มเลือกทิศทาง
-        random.shuffle(directions)
-        
-        # ลองเคลื่อนที่ในแต่ละทิศทาง
-        for dir_row, dir_col in directions:
-            # ลองเดิน 1 ช่อง
-            to_row = from_row + dir_row
-            to_col = from_col + dir_col
-            
-            # ตรวจสอบว่าอยู่ในกระดาน
-            if 0 <= to_row < 8 and 0 <= to_col < 8:
-                # ตรวจสอบว่าช่องว่าง
-                if board[to_row][to_col] == 0:
-                    # เคลื่อนที่
-                    board[to_row][to_col] = piece
-                    board[from_row][from_col] = 0
-                    
-                    # ตรวจสอบการเลื่อนขั้นเป็นคิง
-                    if piece == 1 and to_row == 0:  # หมากขาวถึงแถวบนสุด
-                        board[to_row][to_col] = 3  # เลื่อนขั้นเป็นคิงขาว
-                    elif piece == 2 and to_row == 7:  # หมากดำถึงแถวล่างสุด
-                        board[to_row][to_col] = 4  # เลื่อนขั้นเป็นคิงดำ
-                    
-                    # เปลี่ยนเทิร์น
-                    game_data['player_turn'] = True
-                    game_data['board'] = board
-                    session['checkers_game'] = game_data
-                    
-                    return jsonify({
-                        'board': board,
-                        'move': True,
-                        'from_row': from_row,
-                        'from_col': from_col,
-                        'to_row': to_row,
-                        'to_col': to_col,
-                        'captured': False,
-                        'game_over': False,
-                        'winner': None,
-                        'player_turn': True
-                    })
-                    
-            # ลองเดิน 2 ช่อง (กิน)
-            to_row = from_row + 2 * dir_row
-            to_col = from_col + 2 * dir_col
-            middle_row = from_row + dir_row
-            middle_col = from_col + dir_col
-            
-            # ตรวจสอบว่าอยู่ในกระดาน
-            if 0 <= to_row < 8 and 0 <= to_col < 8:
-                # ตรวจสอบว่าช่องปลายทางว่าง
-                if board[to_row][to_col] == 0:
-                    # ตรวจสอบว่ามีหมากฝ่ายตรงข้ามตรงกลาง
-                    middle_piece = board[middle_row][middle_col]
-                    player_pieces = [1, 3] if player_color == 'white' else [2, 4]
-                    
-                    if middle_piece in player_pieces:
-                        # กินหมาก
-                        board[to_row][to_col] = piece
-                        board[from_row][from_col] = 0
-                        board[middle_row][middle_col] = 0
-                        
-                        # ตรวจสอบการเลื่อนขั้นเป็นคิง
-                        if piece == 1 and to_row == 0:  # หมากขาวถึงแถวบนสุด
-                            board[to_row][to_col] = 3  # เลื่อนขั้นเป็นคิงขาว
-                        elif piece == 2 and to_row == 7:  # หมากดำถึงแถวล่างสุด
-                            board[to_row][to_col] = 4  # เลื่อนขั้นเป็นคิงดำ
-                        
-                        # เปลี่ยนเทิร์น
-                        game_data['player_turn'] = True
-                        game_data['board'] = board
-                        session['checkers_game'] = game_data
-                        
-                        return jsonify({
-                            'board': board,
-                            'move': True,
-                            'from_row': from_row,
-                            'from_col': from_col,
-                            'to_row': to_row,
-                            'to_col': to_col,
-                            'captured': True,
-                            'game_over': False,
-                            'winner': None,
-                            'player_turn': True
-                        })
+    # 4. ทำการเคลื่อนที่
+    (from_row, from_col), (to_row, to_col), is_capture = selected_move
+    piece = board[from_row][from_col]
     
-    # ถ้าไม่สามารถเคลื่อนที่ได้ ให้ผู้เล่นชนะ
-    game_data['game_over'] = True
-    game_data['winner'] = 'player'
+    # บันทึกการเคลื่อนที่
+    board[to_row][to_col] = piece
+    board[from_row][from_col] = 0
+    
+    # ถ้าเป็นการกิน ให้ลบหมากที่ถูกกิน
+    if is_capture:
+        middle_row = (from_row + to_row) // 2
+        middle_col = (from_col + to_col) // 2
+        board[middle_row][middle_col] = 0
+    
+    # ตรวจสอบการเลื่อนขั้นเป็นคิง
+    if piece == 1 and to_row == 0:  # หมากขาวถึงแถวบนสุด
+        board[to_row][to_col] = 3  # เลื่อนขั้นเป็นคิงขาว
+    elif piece == 2 and to_row == 7:  # หมากดำถึงแถวล่างสุด
+        board[to_row][to_col] = 4  # เลื่อนขั้นเป็นคิงดำ
+    
+    # 5. ตรวจสอบการแพ้ชนะหลังจากเดิน
+    game_over, winner = check_game_status(board, False)  # False = after AI's turn
+    
+    # อัพเดตข้อมูลเกม
+    game_data['board'] = board
+    game_data['player_turn'] = True
+    game_data['game_over'] = game_over
+    game_data['winner'] = winner
     session['checkers_game'] = game_data
     
     return jsonify({
         'board': board,
-        'move': False,
-        'game_over': True,
-        'winner': 'player',
+        'move': True,
+        'from_row': from_row,
+        'from_col': from_col,
+        'to_row': to_row,
+        'to_col': to_col,
+        'captured': is_capture,
+        'game_over': game_over,
+        'winner': winner,
         'player_turn': True
     })
-
-# Run the application
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
