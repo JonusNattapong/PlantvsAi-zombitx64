@@ -10,7 +10,7 @@
 2. **Connect Four** - เกมต่อเรียง 4
 3. **Checkers** - เกมหมากฮอส
 4. **Chess** - เกมหมากรุกสากล
-5. **Poker** - เกมไพ่โป๊กเกอร์
+5. **Poker** - เกมไพ่โป๊กเกอร์ (Texas Hold'em)
 
 ## อัลกอริทึม AI ที่ใช้
 
@@ -21,6 +21,33 @@
 5. **MCTS (Monte Carlo Tree Search)** - การสุ่มจำลองเกมจำนวนมากเพื่อหาทางเล่นที่ดีที่สุด
 6. **Genetic Algorithm** - อัลกอริทึมเชิงวิวัฒนาการที่ปรับปรุงกลยุทธ์ด้วยการสุ่มกลายพันธุ์และการคัดเลือก
 7. **ZomPokerX64** - โมเดล AI ขั้นสูงสำหรับเกมโป๊กเกอร์ที่ใช้ Machine Learning และ Neural Networks
+
+## คุณสมบัติเกม Poker (Texas Hold'em)
+
+1. **ระบบ AI ขั้นสูง**:
+   - 5 ระดับความยากของ AI
+   - การเรียนรู้แบบเสริมกำลัง (Reinforcement Learning)
+   - การวิเคราะห์รูปแบบการเล่นของผู้เล่น
+   - การประเมินความแข็งแกร่งของมือไพ่
+
+2. **อินเทอร์เฟซที่ทันสมัย**:
+   - ดีไซน์ทันสมัยด้วย Tailwind CSS
+   - การแสดงผลไพ่แบบ 3D
+   - ระบบเสียงเอฟเฟกต์
+   - สถิติเกมแบบเรียลไทม์
+
+3. **ฟีเจอร์เกม**:
+   - การเดิมพันแบบหลายระดับ
+   - การแสดงผลมือไพ่ที่ดีที่สุด
+   - ประวัติการเดิมพัน
+   - บันทึกเกมแบบเรียลไทม์
+   - สถิติการเล่น
+
+4. **ระบบเสียง**:
+   - เสียงเอฟเฟกต์เมื่อมีการกระทำ
+   - เสียงไพ่เมื่อแจกไพ่
+   - เสียงชิปเมื่อวางเดิมพัน
+   - เสียงชัยชนะ/แพ้
 
 ## โครงสร้างโปรเจค
 
@@ -33,6 +60,10 @@ PlantvsAi-zombitx64/
 │   ├── architecture/       # เอกสารสถาปัตยกรรม
 │   └── user-guide/         # คู่มือการใช้งาน
 ├── static/                 # ไฟล์สถิต (CSS, JS, Images)
+│   ├── css/                # ไฟล์ CSS
+│   ├── js/                 # ไฟล์ JavaScript
+│   ├── sounds/             # เสียงเอฟเฟกต์
+│   └── svg_cards/          # ไฟล์ภาพ SVG ของไพ่
 ├── templates/              # เทมเพลต HTML
 ├── app.py                  # แอปพลิเคชัน Flask หลัก
 ├── .env.example            # ตัวอย่างไฟล์ environment variables
@@ -76,260 +107,40 @@ venv\Scripts\activate
 make server
 ```
 
-### วิธีที่ 2: ใช้คำสั่ง Python
+### วิธีที่ 2: ใช้คำสั่งทั่วไป
 
 ```bash
 # Clone repository
 git clone https://github.com/JonusNattapong/PlantvsAi-zombitx64.git
-cd JonusNattapong/PlantvsAi-zombitx64
-
-# สร้างสภาพแวดล้อมเสมือน
-python -m venv venv
-source venv/bin/activate  # สำหรับ Unix/MacOS
-venv\Scripts\activate  # สำหรับ Windows
+cd PlantvsAi-zombitx64
 
 # ติดตั้ง dependencies
 pip install -r requirements.txt
 
-# รันแอปพลิเคชัน
+# รันเซิร์ฟเวอร์
 python app.py
 ```
 
-จากนั้นเข้าไปที่ http://localhost:5000 ในเว็บเบราว์เซอร์เพื่อเริ่มเล่นเกม
+## วิธีการเล่น Poker
 
-## คำสั่งที่มีประโยชน์
+1. เลือกระดับความยากของ AI (0-4)
+2. เริ่มเกมใหม่
+3. ระบบจะแจกไพ่ให้ผู้เล่นและ AI
+4. ผู้เล่นสามารถ:
+   - ตรวจสอบ (Check) - ถ้าไม่มีการเดิมพันก่อนหน้านี้
+   - เรียก (Call) - ตามการเดิมพันที่มีอยู่
+   - เพิ่ม (Raise) - เพิ่มการเดิมพัน
+   - พับ (Fold) - ออกจากเกมรอบนี้
+5. ระบบจะแสดงผลมือไพ่ที่ดีที่สุดของผู้เล่นและ AI
+6. ผู้เล่นที่มีมือไพ่ดีกว่าจะชนะและได้รับชิป
 
-โปรเจคนี้มาพร้อมกับ Makefile ที่มีคำสั่งที่มีประโยชน์หลายอย่าง:
+## รายละเอียดการตั้งค่า AI
 
-- `make setup` - ตั้งค่าสภาพแวดล้อมการพัฒนา
-- `make test` - รันการทดสอบทั้งหมด
-- `make lint` - ตรวจสอบรูปแบบโค้ด
-- `make format` - จัดรูปแบบโค้ดโดยอัตโนมัติ
-- `make docs` - สร้างเอกสาร
-- `make server` - รันเซิร์ฟเวอร์การพัฒนา
-
-รันคำสั่ง `make help` เพื่อดูรายการคำสั่งที่มีทั้งหมด
-
-## การใช้งาน
-
-1. เลือกเกมที่ต้องการเล่นจากหน้าหลัก
-2. เลือกอัลกอริทึม AI ที่ต้องการเล่นด้วย
-3. เล่นเกมตามกติกาของแต่ละเกม
-4. สถิติการเล่นจะถูกบันทึกไว้และแสดงผลในหน้าเกม
-
-## เอกสาร
-
-เอกสารเพิ่มเติมสามารถพบได้ในโฟลเดอร์ `docs/`:
-
-- **API Documentation**: อธิบายเกี่ยวกับ API ที่มีให้ใช้
-- **Architecture Documentation**: อธิบายสถาปัตยกรรมของระบบ
-- **User Guide**: คู่มือผู้ใช้โดยละเอียด
-
-คุณสามารถสร้างเอกสาร HTML ได้โดยใช้คำสั่ง:
-
-```bash
-make docs
-```
-
-# เกมโป๊กเกอร์ (Poker Game)
-
-เกมโป๊กเกอร์ที่พัฒนาด้วย Python โดยใช้แนวคิด Texas Hold'em Poker พร้อม AI ขั้นสูงจากโมเดล ZomPokerX64
-
-## คุณสมบัติ
-
-- เล่นโป๊กเกอร์แบบ Texas Hold'em
-- ระบบเว็บเซิร์ฟเวอร์ด้วย Flask
-- เชื่อมต่อ frontend กับ backend ด้วย Fetch API
-- แสดงผลไพ่ด้วยภาพจาก SVG
-- ระบบเสียงเอฟเฟกต์ที่สมจริง
-- มี AI หลายระดับความยาก:
-  - AI แบบง่าย (Rule-based AI)
-  - AI แบบใช้ความน่าจะเป็น (Probability-based AI)
-  - **AI ขั้นสูง ZomPokerX64 (Machine Learning & Neural Networks)**
-- ระบบเก็บสถิติการเล่น
-- ระบบเดิมพันและจัดการชิป
-- แสดงผลลัพธ์แบบละเอียด
-
-## วิธีการเล่น
-
-1. เข้าไปที่ http://localhost:5000 ในเว็บเบราว์เซอร์
-2. เลือกเกม Poker จากหน้าหลัก
-3. เลือกระดับความยากของ AI
-4. เล่นเกมโดยการเลือกการกระทำในแต่ละรอบ:
-   - Check: ตรวจสอบ (เมื่อไม่มีการเดิมพันก่อนหน้า)
-   - Call: เรียก (เมื่อมีการเดิมพันก่อนหน้า)
-   - Raise: เพิ่มเดิมพัน
-   - Fold: พับ
-
-## AI ขั้นสูง ZomPokerX64
-
-ZomPokerX64 เป็นโมเดล AI ขั้นสูงที่พัฒนาโดยใช้ Machine Learning และ Neural Networks เพื่อตัดสินใจในเกมโป๊กเกอร์ได้อย่างชาญฉลาด โดยมีคุณสมบัติดังนี้:
-
-- **Pre-calculated hand strength tables**: ใช้ตารางความแข็งแกร่งของไพ่ที่คำนวณไว้ล่วงหน้า
-- **Neural network for decision making**: ใช้ Neural Networks ในการตัดสินใจ
-- **Opponent modeling**: วิเคราะห์รูปแบบการเล่นของคู่ต่อสู้
-- **Monte Carlo simulations**: ใช้การจำลอง Monte Carlo เพื่อคำนวณโอกาสในการชนะ
-- **Adaptive betting patterns**: ปรับรูปแบบการเดิมพันให้เหมาะสมกับสถานการณ์
-
-รองรับการทำงานบนหลาย framework:
-- TensorFlow
-- scikit-learn
-- SafeTensors
-
-## Workflow Diagram ของเกม Poker
-
-```mermaid
-graph TD
-    A[Poker Game Flow] --> B[เริ่มเกม]
-    A --> C[Game Loop]
-    A --> D[AI Decision]
-    A --> E[Frontend-Backend]
-    
-    B --> B1[จัดการชิป]
-    B --> B2[แจกไพ่]
-    B --> B3[กำหนดผู้เล่นเริ่มต้น]
-    
-    C --> C1[Pre-Flop]
-    C1 --> C1a[Small Blind]
-    C1 --> C1b[Big Blind]
-    C1 --> C1c[การเดิมพัน]
-    
-    C --> C2[Flop]
-    C2 --> C2a[การเดิมพัน]
-    
-    C --> C3[Turn]
-    C3 --> C3a[การเดิมพัน]
-    
-    C --> C4[River]
-    C4 --> C4a[การเดิมพัน]
-    
-    C --> C5[Showdown]
-    C5 --> C5a[คำนวณผู้ชนะ]
-    C5 --> C5b[จ่ายชิป]
-    
-    D --> D1[ZomPokerX64 AI]
-    D1 --> D1a[Neural Networks]
-    D1 --> D1b[ข้อมูลสถานะเกม]
-    D1 --> D1c[Monte Carlo Simulation]
-    D1 --> D1d[Opponent Modeling]
-    
-    D --> D2[Rule-based AI]
-    D2 --> D2a[กฎพื้นฐาน]
-    D2 --> D2b[Hand Strength]
-    D2 --> D2c[Pot Odds]
-    D2 --> D2d[Position]
-    
-    D --> D3[Actions]
-    D3 --> D3a[Fold]
-    D3 --> D3b[Check]
-    D3 --> D3c[Call]
-    D3 --> D3d[Raise]
-    
-    E --> E1[Frontend JavaScript]
-    E1 --> E1a[แสดงผลไพ่]
-    E1 --> E1b[เสียงเอฟเฟกต์]
-    E1 --> E1c[UI Controls]
-    
-    E --> E2[Backend Flask]
-    E2 --> E2a[Game Logic]
-    E2 --> E2b[AI]
-    E2 --> E2c[State Management]
-    
-    E --> E3[API]
-    E3 --> E3a[AJAX/Fetch]
-    E3 --> E3b[WebSocket]
-    E3 --> E3c[JSON Responses]
-```
-
-## การทำงานของระบบ
-
-### Frontend-Backend Communication Flow
-
-```mermaid
-sequenceDiagram
-    participant Player as ผู้เล่น
-    participant Frontend as Frontend Interface
-    participant Backend as Backend Server
-    participant AI as ZomPokerX64 AI
-
-    Player->>Frontend: เลือกการกระทำ (Check/Call/Raise/Fold)
-    Frontend->>Backend: ส่งข้อมูลด้วย Fetch API
-    Backend->>Backend: ประมวลผลการกระทำของผู้เล่น
-    Backend->>Backend: ปรับปรุงสถานะเกม
-    
-    alt ถึงตา AI
-        Backend->>AI: ขอการตัดสินใจ
-        AI->>AI: วิเคราะห์สถานการณ์ด้วย Neural Network
-        AI->>Backend: ส่งการตัดสินใจ
-        Backend->>Backend: ประมวลผลการกระทำของ AI
-    end
-    
-    Backend->>Frontend: ส่งข้อมูลสถานะเกมกลับ (JSON)
-    Frontend->>Frontend: อัปเดตการแสดงไพ่
-    Frontend->>Frontend: เล่นเสียงเอฟเฟกต์
-    Frontend->>Player: แสดงผลให้ผู้เล่นเห็น
-```
-
-### ZomPokerX64 AI Architecture
-
-```mermaid
-graph TB
-    Input[Input Features] --> Preprocess[Preprocessing]
-    
-    subgraph Features
-    F1[Hand Strength]
-    F2[Community Cards]
-    F3[Betting History]
-    F4[Stack Sizes]
-    F5[Position]
-    F6[Pot Odds]
-    end
-    
-    Features --> Input
-    
-    subgraph Preprocessing Steps
-    P1[Feature Extraction]
-    P2[Normalization]
-    P3[Encoding]
-    end
-    
-    Preprocess --> P1
-    Preprocess --> P2
-    Preprocess --> P3
-    
-    P1 & P2 & P3 --> Models
-    
-    subgraph Models
-    M1[Neural Networks]
-    M2[Random Forest]
-    M3[Decision Trees]
-    end
-    
-    Models --> Decision
-    
-    subgraph Decision Process
-    D1[Calculate Action Probabilities]
-    D2[Monte Carlo Simulation]
-    D3[Opponent Model Analysis]
-    D4[Risk/Reward Adjustment]
-    end
-    
-    Decision --> D1
-    Decision --> D2
-    Decision --> D3
-    Decision --> D4
-    
-    D1 & D2 & D3 & D4 --> Actions
-    
-    subgraph Actions
-    A1[Fold]
-    A2[Check]
-    A3[Call]
-    A4[Raise]
-    end
-    
-    A4 --> RaiseCalc[Determine Raise Amount]
-```
+- **ระดับ 0 (ง่าย)**: ใช้ยุทธศาสตร์ง่ายๆ ในการตัดสินใจ
+- **ระดับ 1 (ปานกลาง)**: ใช้ความน่าจะเป็นในการตัดสินใจ
+- **ระดับ 2 (ยาก)**: ใช้โมเดล Machine Learning
+- **ระดับ 3 (ผู้เชี่ยวชาญ)**: ใช้ Reinforcement Learning
+- **ระดับ 4 (ผู้เชี่ยวชาญขั้นสูง)**: ใช้ Advanced Self-Learning
 
 ## การมีส่วนร่วมในโปรเจค
 
@@ -337,12 +148,51 @@ graph TB
 
 ## จรรยาบรรณ
 
-โปรเจคนี้อยู่ภายใต้ [Code of Conduct](CODE_OF_CONDUCT.md) ทุกคนที่มีส่วนร่วมถูกคาดหวังให้ปฏิบัติตามข้อกำหนดเหล่านี้
-
-## ประวัติการเปลี่ยนแปลง
-
-ดูการเปลี่ยนแปลงทั้งหมดของโปรเจคได้ที่ [CHANGELOG.md](CHANGELOG.md)
+โปรดอ่านและปฏิบัติตาม [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ## ใบอนุญาต
 
-โปรเจคนี้อยู่ภายใต้ใบอนุญาต MIT - ดูไฟล์ [LICENSE](LICENSE) สำหรับรายละเอียด
+โปรเจคนี้ใช้ใบอนุญาต MIT License - ดูที่ [LICENSE](LICENSE) สำหรับรายละเอียดเพิ่มเติม
+
+## ผู้พัฒนา
+
+- **Jonus Nattapong** - ผู้สร้างและผู้รับผิดชอบหลัก
+- **ผู้มีส่วนร่วม** - ดูที่ [CONTRIBUTORS.md](CONTRIBUTORS.md)
+
+## รับการอัพเดท
+
+ติดตามการพัฒนาและอัพเดทล่าสุดได้ที่:
+- [GitHub Repository](https://github.com/JonusNattapong/PlantvsAi-zombitx64)
+- [Twitter](https://twitter.com/jonusnattapong)
+- [Discord](https://discord.gg/your-invite)
+
+## การสนับสนุน
+
+หากคุณพบปัญหาหรือต้องการความช่วยเหลือ โปรด:
+1. เปิด Issue ใน GitHub
+2. ติดต่อผ่าน Discord
+3. อีเมล: jonus.nattapong@example.com
+
+## ข้อตกลงการใช้งาน
+
+การใช้งานโปรเจคนี้ถือว่าคุณยอมรับ:
+- ข้อตกลงใบอนุญาต MIT
+- จรรยาบรรณของผู้มีส่วนร่วม
+- นโยบายความเป็นส่วนตัว
+
+## ข้อมูลเพิ่มเติม
+
+- [เอกสาร API](docs/api/)
+- [คู่มือการใช้งาน](docs/user-guide/)
+- [เอกสารสถาปัตยกรรม](docs/architecture/)
+
+## รุ่นปัจจุบัน
+
+- **เวอร์ชัน**: 1.0.0
+- **วันที่**: 2025-03-23
+- **การเปลี่ยนแปลงหลัก**:
+  - เพิ่มเกม Poker (Texas Hold'em)
+  - ปรับปรุงอินเทอร์เฟซทั้งหมดให้ทันสมัยด้วย Tailwind CSS
+  - เพิ่มระบบ AI ขั้นสูงสำหรับเกม Poker
+  - ปรับปรุงระบบเสียงเอฟเฟกต์
+  - เพิ่มสถิติเกมแบบเรียลไทม์

@@ -190,16 +190,6 @@
                 <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
                     <h2 class="text-2xl font-bold mb-4">การตั้งค่า</h2>
                     
-                    <!-- Difficulty Selection -->
-                    <div class="mb-6">
-                        <label class="block text-gray-400 mb-2">ระดับความยาก</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-algorithm="0">ง่าย</button>
-                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-primary text-white transition-colors selected" data-algorithm="1">ปานกลาง</button>
-                            <button class="ai-algorithm px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors" data-algorithm="2">ยาก</button>
-                        </div>
-                    </div>
-
                     <!-- Player Selection -->
                     <div class="mb-6">
                         <label class="block text-gray-400 mb-2">เลือกฝั่ง</label>
@@ -328,7 +318,7 @@
     </div>
 
     <!-- Load Scripts -->
-    <script src="/static/game_utils.js"></script>
-    <script src="/static/checkers.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/checkers.js') }}"></script>
 </body>
 </html>

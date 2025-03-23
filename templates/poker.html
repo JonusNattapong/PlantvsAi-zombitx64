@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker - PlantvsAi</title>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/poker.css') }}">
     <script>
         tailwind.config = {
             theme: {
@@ -34,49 +35,6 @@
             },
         }
     </script>
-    <style>
-        .card {
-            width: 80px;
-            height: 120px;
-            background-color: white;
-            border-radius: 5px;
-            margin: 0 5px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 20px;
-            font-weight: bold;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        .card.hearts, .card.diamonds {
-            color: #e53e3e;
-        }
-        .card.clubs, .card.spades {
-            color: #1a202c;
-        }
-        .card .suit {
-            font-size: 36px;
-            margin-top: 5px;
-        }
-        .card .rank {
-            position: absolute;
-            top: 5px;
-            left: 5px;
-        }
-        .card .suit-bottom {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            font-size: 14px;
-        }
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-    </style>
 </head>
 <body class="font-kanit bg-gradient-to-br from-dark to-dark-secondary text-white min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -99,71 +57,37 @@
             <!-- Game Board -->
             <div class="flex-1">
                 <div class="bg-poker-table bg-opacity-70 rounded-2xl p-6 backdrop-blur-lg">
-                    <!-- Game Info -->
-                    <div class="flex justify-between mb-6 bg-poker-felt p-4 rounded-xl shadow-lg">
-                        <div class="text-xl font-medium">รอบ: <span id="game-stage" class="uppercase">PRE-FLOP</span></div>
-                        <div class="text-xl font-bold text-poker-gold">พ็อต: <span id="pot-amount">15</span> ชิป</div>
+                    <!-- Player Cards -->
+                    <div class="flex justify-center gap-4 mb-8" id="player-cards">
+                        <div class="card hidden" id="player-card-1"></div>
+                        <div class="card hidden" id="player-card-2"></div>
                     </div>
 
                     <!-- Community Cards -->
-                    <div class="flex justify-center items-center my-8 min-h-[140px] bg-poker-felt p-6 rounded-xl shadow-lg" id="community-cards">
-                        <!-- Community cards will be added here -->
-                        <img class="card hidden" id="community-card-1" src="/static/svg_cards/ace_of_spades.svg" alt="Ace of Spades">
-                        <img class="card hidden" id="community-card-2" src="/static/svg_cards/king_of_hearts.svg" alt="King of Hearts">
-                        <img class="card hidden" id="community-card-3" src="/static/svg_cards/queen_of_diamonds.svg" alt="Queen of Diamonds">
-                        <img class="card hidden" id="community-card-4" src="/static/svg_cards/jack_of_clubs.svg" alt="Jack of Clubs">
-                        <img class="card hidden" id="community-card-5" src="/static/svg_cards/10_of_spades.svg" alt="10 of Spades">
+                    <div class="flex justify-center gap-4 mb-8" id="community-cards">
+                        <div class="card hidden" id="community-card-1"></div>
+                        <div class="card hidden" id="community-card-2"></div>
+                        <div class="card hidden" id="community-card-3"></div>
+                        <div class="card hidden" id="community-card-4"></div>
+                        <div class="card hidden" id="community-card-5"></div>
                     </div>
 
-                    <!-- Players -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <!-- Player -->
-                        <div class="bg-poker-felt p-6 rounded-xl shadow-lg" id="player">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-xl font-semibold">ผู้เล่น</span>
-                                <span class="text-poker-gold font-bold">1000 ชิป</span>
-                            </div>
-                            <div class="flex justify-center space-x-2 my-4" id="player-hand">
-                                <!-- Player cards will be added here -->
-                                <div class="card" id="player-card-1">
-                                    <div class="rank">A</div>
-                                    <div class="suit">♦</div>
-                                    <div class="suit-bottom">♦</div>
-                                </div>
-                                <div class="card" id="player-card-2">
-                                    <div class="rank">A</div>
-                                    <div class="suit">♣</div>
-                                    <div class="suit-bottom">♣</div>
-                                </div>
-                            </div>
-                            <div class="text-center text-poker-gold font-medium mb-3" id="player-hand-name">เอซคู่</div>
-                            <div class="flex justify-between items-center">
-                                <div class="text-poker-accent">เดิมพันปัจจุบัน: <span id="player-bet">5</span> ชิป</div>
-                                <div class="italic" id="player-status">รอการเล่น...</div>
-                            </div>
-                        </div>
-                        
-                        <!-- AI Player -->
-                        <div class="bg-poker-felt p-6 rounded-xl shadow-lg" id="ai-player">
-                            <div class="flex justify-between items-center mb-4">
-                                <span class="text-xl font-semibold">AI</span>
-                                <span class="text-poker-gold font-bold">1000 ชิป</span>
-                            </div>
-                            <div class="flex justify-center space-x-2 my-4" id="ai-hand">
-                                <!-- AI cards will be added here (face down initially) -->
-                                <div class="card" id="ai-card-1" style="background-color: #9C2B2E;">
-                                    <!-- Hidden until showdown -->
-                                </div>
-                                <div class="card" id="ai-card-2" style="background-color: #9C2B2E;">
-                                    <!-- Hidden until showdown -->
-                                </div>
-                            </div>
-                            <div class="text-center text-poker-gold font-medium mb-3" id="ai-hand-name">?</div>
-                            <div class="flex justify-between items-center">
-                                <div class="text-poker-accent">เดิมพันปัจจุบัน: <span id="ai-bet">10</span> ชิป</div>
-                                <div class="italic" id="ai-status">รอการเล่น...</div>
-                            </div>
-                        </div>
+                    <!-- AI Cards (Face Down) -->
+                    <div class="flex justify-center gap-4 mb-8" id="ai-cards">
+                        <div class="card face-down" id="ai-card-1"></div>
+                        <div class="card face-down" id="ai-card-2"></div>
+                    </div>
+
+                    <!-- Pot Display -->
+                    <div class="text-center mb-8">
+                        <div class="text-2xl font-bold mb-2">กองกลาง</div>
+                        <div class="text-4xl font-bold" id="pot-display">$0</div>
+                    </div>
+
+                    <!-- Current Bet Display -->
+                    <div class="text-center mb-8">
+                        <div class="text-xl font-bold mb-2">การเดิมพันปัจจุบัน</div>
+                        <div class="text-3xl font-bold" id="current-bet">$0</div>
                     </div>
 
                     <!-- Action Buttons -->
@@ -173,82 +97,48 @@
                         <button class="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-xl font-medium transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed" id="btn-raise">เพิ่ม</button>
                         <button class="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-xl font-medium transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed" id="btn-fold">พับ</button>
                     </div>
-
-                    <!-- Betting Input -->
-                    <div class="flex items-center justify-center space-x-3 mb-6 hidden" id="bet-input">
-                        <input type="number" id="raise-amount" min="20" max="1000" value="20" class="w-32 px-4 py-2 rounded-lg text-dark">
-                        <button class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition duration-300" id="btn-confirm-raise">ยืนยัน</button>
-                        <button class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition duration-300" id="btn-cancel-raise">ยกเลิก</button>
-                    </div>
-
-                    <!-- Game Result -->
-                    <div class="text-center text-2xl font-bold text-poker-gold mb-6 hidden animate-pulse" id="game-result">
-                        ผู้เล่นชนะด้วย เอซคู่!
-                    </div>
-
-                    <!-- Bet History -->
-                    <div class="bg-poker-felt p-4 rounded-xl shadow-lg mb-6">
-                        <h3 class="text-xl font-medium border-b border-poker-gold pb-2 mb-3">ประวัติการเดิมพัน</h3>
-                        <ul id="bet-history-list" class="max-h-32 overflow-y-auto space-y-1">
-                            <li class="py-1 border-b border-opacity-20 border-green-500">ผู้เล่น วาง small blind 5 ชิป (pre_flop)</li>
-                            <li class="py-1">AI วาง big blind 10 ชิป (pre_flop)</li>
-                        </ul>
-                    </div>
-
-                    <!-- Game Log -->
-                    <div class="bg-poker-felt p-4 rounded-xl shadow-lg">
-                        <h3 class="text-xl font-medium border-b border-poker-gold pb-2 mb-3">บันทึกเกม</h3>
-                        <div id="game-log-content" class="max-h-32 overflow-y-auto space-y-1 text-sm">
-                            <p>Player posts small blind: 5</p>
-                            <p>AI posts big blind: 10</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- Game Controls and Stats -->
             <div class="lg:w-80">
                 <!-- Game Controls -->
-                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg mb-6">
-                    <h2 class="text-2xl font-bold mb-4">การตั้งค่า</h2>
-                    
-                    <!-- Difficulty Selection -->
-                    <div class="mb-6">
-                        <label class="block text-gray-400 mb-2">ระดับความยาก AI</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">ง่าย</button>
-                            <button class="px-4 py-2 rounded-lg bg-primary text-white transition-colors">ปานกลาง</button>
-                            <button class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">ยาก</button>
+                <div class="bg-dark bg-opacity-70 rounded-xl p-6 mb-8">
+                    <h2 class="text-xl font-bold mb-4">ตั้งค่าเกม</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">ระดับความยาก AI</label>
+                            <select id="difficulty-level" class="w-full bg-dark-secondary text-white rounded-lg p-2">
+                                <option value="0">ง่าย - ยุทธศาสตร์ง่ายๆ</option>
+                                <option value="1">ปานกลาง - ขึ้นอยู่กับความน่าจะเป็น</option>
+                                <option value="2">ยาก - โมเดล ML</option>
+                                <option value="3">ผู้เชี่ยวชาญ - การเรียนรู้แบบเสริมกำลัง</option>
+                                <option value="4">ผู้เชี่ยวชาญ - การเรียนรู้แบบขั้นสูง</option>
+                            </select>
                         </div>
+                        <button id="start-new-game" class="w-full bg-primary hover:bg-primary-hover rounded-xl py-2 font-medium transition duration-300">เริ่มเกมใหม่</button>
                     </div>
-                    
-                    <!-- Start New Game -->
-                    <button class="w-full py-3 bg-gradient-to-r from-primary to-primary-hover rounded-xl font-medium transition duration-300 hover:shadow-lg">เริ่มเกมใหม่</button>
                 </div>
-                
-                <!-- Statistics -->
-                <div class="bg-white/10 rounded-2xl p-6 backdrop-blur-lg">
-                    <h2 class="text-2xl font-bold mb-4">สถิติ</h2>
+
+                <!-- Game Statistics -->
+                <div class="bg-dark bg-opacity-70 rounded-xl p-6">
+                    <h2 class="text-xl font-bold mb-4">สถิติเกม</h2>
                     <div class="space-y-4">
                         <div class="flex justify-between">
-                            <span class="text-gray-400">เกมที่เล่นทั้งหมด:</span>
-                            <span class="font-bold text-poker-gold">0</span>
+                            <span>ชัยชนะของผู้เล่น</span>
+                            <span id="player-wins">0</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-400">ชัยชนะของผู้เล่น:</span>
-                            <span class="font-bold text-poker-gold">0</span>
+                            <span>ชัยชนะของ AI</span>
+                            <span id="ai-wins">0</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-400">ชัยชนะของ AI:</span>
-                            <span class="font-bold text-poker-gold">0</span>
+                            <span>จำนวนเกม</span>
+                            <span id="total-games">0</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-400">อัตราส่วนชนะ:</span>
-                            <span class="font-bold text-poker-gold">0.00%</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-400">ชิปสูงสุดที่ได้:</span>
-                            <span class="font-bold text-poker-gold">0</span>
+                            <span>เงินรางวัลรวม</span>
+                            <span id="total-winnings">$0</span>
                         </div>
                     </div>
                 </div>
@@ -256,317 +146,7 @@
         </div>
     </div>
 
-    <script>
-        // Game state for UI updates
-        const gameState = {
-            stage: 'pre_flop',
-            pot: 15,
-            player: {
-                chips: 1000,
-                currentBet: 5,
-                status: 'รอการเล่น...',
-                hand: [
-                    { suit: 'diamonds', rank: 'A' },
-                    { suit: 'clubs', rank: 'A' }
-                ],
-                handName: 'เอซคู่'
-            },
-            ai: {
-                chips: 1000,
-                currentBet: 10,
-                status: 'รอการเล่น...',
-                hand: null, // Hidden initially
-                handName: '?'
-            },
-            communityCards: [],
-            validActions: ['call', 'raise', 'fold'],
-            betHistory: [
-                'ผู้เล่น วาง small blind 5 ชิป (pre_flop)',
-                'AI วาง big blind 10 ชิป (pre_flop)'
-            ],
-            actionLog: [
-                'Player posts small blind: 5',
-                'AI posts big blind: 10'
-            ],
-            result: null
-        };
-
-        // Update UI based on game state
-        function updateUI(gameState) {
-            // Update game stage and pot
-            document.getElementById('game-stage').textContent = gameState.stage.toUpperCase();
-            document.getElementById('pot-amount').textContent = gameState.pot;
-            
-            // Update player info
-            const playerChipCount = document.querySelector('#player .chip-count');
-            playerChipCount.textContent = `${gameState.player.chips} ชิป`;
-            document.getElementById('player-bet').textContent = gameState.player.currentBet;
-            document.getElementById('player-status').textContent = gameState.player.status;
-            document.getElementById('player-hand-name').textContent = gameState.player.handName;
-            
-            // Update AI info
-            const aiChipCount = document.querySelector('#ai-player .chip-count');
-            aiChipCount.textContent = `${gameState.ai.chips} ชิป`;
-            document.getElementById('ai-bet').textContent = gameState.ai.currentBet;
-            document.getElementById('ai-status').textContent = gameState.ai.status;
-            document.getElementById('ai-hand-name').textContent = gameState.ai.handName;
-            
-            // Update community cards
-            updateCommunityCards(gameState.communityCards);
-            
-            // Update player cards
-            if (gameState.player.hand) {
-                updatePlayerAndAICards();
-            }
-            
-            // Update action buttons
-            updateActionButtons(gameState);
-            
-            // Update bet history
-            updateBetHistory(gameState.betHistory);
-            
-            // Update game log
-            updateGameLog(gameState.actionLog);
-            
-            // Show/hide game result
-            const gameResultElement = document.getElementById('game-result');
-            if (gameState.result) {
-                gameResultElement.textContent = gameState.result;
-                gameResultElement.classList.remove('hidden');
-            } else {
-                gameResultElement.classList.add('hidden');
-            }
-        }
-
-        function updateCardImage(cardId, cardData) {
-            if (!cardData) return;
-            const cardElement = document.getElementById(cardId);
-            if (cardData.hidden) {
-                cardElement.style.backgroundColor = '#9C2B2E';
-                cardElement.innerHTML = '';
-            } else {
-                cardElement.style.backgroundColor = 'white';
-                cardElement.innerHTML = `
-                    <div class="rank">${cardData.rank}</div>
-                    <div class="suit">${getSuitSymbol(cardData.suit)}</div>
-                    <div class="suit-bottom">${getSuitSymbol(cardData.suit)}</div>
-                `;
-                cardElement.className = `card ${cardData.suit}`;
-            }
-        }
-
-        function getSuitSymbol(suit) {
-            switch(suit) {
-                case 'hearts': return '♥';
-                case 'diamonds': return '♦';
-                case 'clubs': return '♣';
-                case 'spades': return '♠';
-                default: return '';
-            }
-        }
-
-        function updatePlayerAndAICards() {
-            // Update player cards
-            if (gameState.player.hand[0]) {
-                updateCardImage('player-card-1', gameState.player.hand[0]);
-            }
-            if (gameState.player.hand[1]) {
-                updateCardImage('player-card-2', gameState.player.hand[1]);
-            }
-            
-            // Update AI cards - they might be hidden
-            if (gameState.ai.hand) {
-                updateCardImage('ai-card-1', gameState.ai.hand[0]);
-                updateCardImage('ai-card-2', gameState.ai.hand[1]);
-            } else {
-                // Hide AI cards
-                document.getElementById('ai-card-1').style.backgroundColor = '#9C2B2E';
-                document.getElementById('ai-card-1').innerHTML = '';
-                document.getElementById('ai-card-2').style.backgroundColor = '#9C2B2E';
-                document.getElementById('ai-card-2').innerHTML = '';
-            }
-        }
-
-        function updateCommunityCards(cards) {
-            for (let i = 1; i <= 5; i++) {
-                const cardElement = document.getElementById(`community-card-${i}`);
-                if (i <= cards.length) {
-                    cardElement.classList.remove('hidden');
-                    updateCardImage(`community-card-${i}`, cards[i-1]);
-                } else {
-                    cardElement.classList.add('hidden');
-                }
-            }
-        }
-
-        function playActionSound(action) {
-            const sounds = {
-                'deal': 'card_deal',
-                'check': 'chip_check',
-                'call': 'chip_call',
-                'raise': 'chip_raise',
-                'fold': 'card_fold',
-                'win': 'game_win',
-                'lose': 'game_lose'
-            };
-            
-            const soundId = sounds[action];
-            if (soundId) {
-                playSound(soundId);
-            }
-        }
-
-        function updateBetHistory(betHistory) {
-            const betHistoryList = document.getElementById('bet-history-list');
-            betHistoryList.innerHTML = '';
-            
-            betHistory.forEach(bet => {
-                const li = document.createElement('li');
-                li.textContent = bet;
-                li.className = 'py-1 border-b border-opacity-20 border-green-500';
-                betHistoryList.appendChild(li);
-            });
-            
-            // Remove border from last item
-            if (betHistoryList.lastChild) {
-                betHistoryList.lastChild.classList.remove('border-b');
-            }
-        }
-
-        function updateGameLog(actionLog) {
-            const gameLogContent = document.getElementById('game-log-content');
-            gameLogContent.innerHTML = '';
-            
-            actionLog.forEach(log => {
-                const p = document.createElement('p');
-                p.textContent = log;
-                gameLogContent.appendChild(p);
-            });
-            
-            // Scroll to bottom
-            gameLogContent.scrollTop = gameLogContent.scrollHeight;
-        }
-
-        function updateActionButtons(gameState) {
-            const btnCheck = document.getElementById('btn-check');
-            const btnCall = document.getElementById('btn-call');
-            const btnRaise = document.getElementById('btn-raise');
-            const btnFold = document.getElementById('btn-fold');
-            
-            // Disable all buttons by default
-            btnCheck.disabled = true;
-            btnCall.disabled = true;
-            btnRaise.disabled = true;
-            btnFold.disabled = true;
-            
-            // Enable buttons based on valid actions
-            if (gameState.validActions.includes('check')) {
-                btnCheck.disabled = false;
-            }
-            if (gameState.validActions.includes('call')) {
-                btnCall.disabled = false;
-            }
-            if (gameState.validActions.includes('raise')) {
-                btnRaise.disabled = false;
-            }
-            if (gameState.validActions.includes('fold')) {
-                btnFold.disabled = false;
-            }
-        }
-
-        function updateStatistics(stats) {
-            // Update statistics when available
-            if (!stats) return;
-            
-            const statsElements = document.querySelectorAll('.statistics-grid .statistic-value');
-            if (statsElements.length >= 5) {
-                statsElements[0].textContent = stats.gamesPlayed;
-                statsElements[1].textContent = stats.playerWins;
-                statsElements[2].textContent = stats.aiWins;
-                statsElements[3].textContent = stats.winRate + '%';
-                statsElements[4].textContent = stats.maxChips;
-            }
-        }
-
-        function playSound(soundId) {
-            // Function would play sound when audio files are available
-            console.log('Playing sound:', soundId);
-        }
-
-        // Initialize the UI when the page loads
-        window.addEventListener('load', function() {
-            updateUI(gameState);
-            playActionSound('deal');
-        });
-
-        // Function to send player action to the backend
-        function sendPlayerAction(action, amount = 0) {
-            playActionSound(action);
-            
-            // Example of a fetch request to your backend
-            /*
-            fetch('/poker/action', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: action,
-                    amount: amount
-                }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update game state with the response
-                updateUI(data);
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-            */
-            
-            // For demonstration, simulate a response
-            setTimeout(() => {
-                // Example AI response
-                gameState.actionLog.push(`Player ${action}${amount > 0 ? ' ' + amount : ''}`);
-                gameState.actionLog.push(`AI calls`);
-                updateUI(gameState);
-            }, 1000);
-        }
-
-        // Button event listeners
-        document.getElementById('btn-check').addEventListener('click', function() {
-            console.log('Player checks');
-            sendPlayerAction('check');
-        });
-
-        document.getElementById('btn-call').addEventListener('click', function() {
-            console.log('Player calls');
-            sendPlayerAction('call');
-        });
-
-        document.getElementById('btn-raise').addEventListener('click', function() {
-            console.log('Player wants to raise');
-            // Show the bet input
-            document.getElementById('bet-input').classList.remove('hidden');
-        });
-
-        document.getElementById('btn-confirm-raise').addEventListener('click', function() {
-            const raiseAmount = document.getElementById('raise-amount').value;
-            console.log('Player raises', raiseAmount);
-            sendPlayerAction('raise', parseInt(raiseAmount));
-            document.getElementById('bet-input').classList.add('hidden');
-        });
-
-        document.getElementById('btn-cancel-raise').addEventListener('click', function() {
-            console.log('Player cancels raise');
-            document.getElementById('bet-input').classList.add('hidden');
-        });
-
-        document.getElementById('btn-fold').addEventListener('click', function() {
-            console.log('Player folds');
-            sendPlayerAction('fold');
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/poker.js') }}"></script>
+    <script src="{{ url_for('static', filename='sounds/sound_effects.js') }}"></script>
 </body>
 </html>
