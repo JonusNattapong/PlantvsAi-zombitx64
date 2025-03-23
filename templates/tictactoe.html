@@ -4,74 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic Tac Toe (เกม XO) - PlantvsAI</title>
-    
-    <!-- Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: {
+                        kanit: ['Kanit', 'sans-serif'],
+                    },
                     colors: {
-                        primary: '#FF5757',
-                        secondary: '#7857FF',
+                        primary: {
+                            DEFAULT: '#ff4e50',
+                            hover: '#f9d423',
+                        },
                         dark: {
-                            primary: '#1E1E2E',
-                            secondary: '#2A2A3A'
+                            DEFAULT: '#1a1a2e',
+                            secondary: '#16213e',
+                        },
+                        board: {
+                            light: '#f0d9b5',
+                            dark: '#b58863',
+                        },
+                        piece: {
+                            white: '#f8f8f8',
+                            black: '#333333',
+                            whiteKing: '#f0f0f0',
+                            blackKing: '#222222',
                         }
-                    }
-                }
-            }
+                    },
+                },
+            },
         }
     </script>
-    
-    <!-- Custom Styles -->
     <style>
-        body {
-            background-color: #1E1E2E;
-            color: white;
-            font-family: 'Prompt', sans-serif;
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
         
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.7; transform: scale(1); }
+        }
+        
+        @keyframes slide {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(var(--slideX), var(--slideY)); }
+        }
+        
+        .animations-disabled * {
+            animation: none !important;
+            transition: none !important;
+        }
+        
+        .piece-selected {
+            animation: pulse 1.5s infinite;
+        }
+        
+        .valid-move {
+            position: relative;
+        }
+        
+        .valid-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20%;
+            height: 20%;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+        
+        .piece {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+        }
+        
+        .piece-white {
+            background-color: #f8f8f8;
+        }
+        
+        .piece-black {
+            background-color: #333333;
+        }
+        
+        .king::after {
+            content: '♔';
+            font-size: 1.2rem;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: gold;
+        }
+        
+        .piece-white.king::after {
+            color: #b58863;
+        }
+        
+        .piece-black.king::after {
+            color: #f0d9b5;
+        }
+
+        /* Tic Tac Toe Specific Styles */
         .ai-algorithm.selected {
             background-color: rgba(255, 255, 255, 0.2);
-            color: #FF5757;
+            color: #FF5757; /* Primary color from tictactoe */
         }
 
         .player-x {
-            color: #FF5757; /* สีแดง */
+            color: #FF5757; /* Primary color from tictactoe */
         }
         
         .player-o {
-            color: #7857FF; /* สีม่วง */
+            color: #7857FF; /* Secondary color from tictactoe */
         }
     </style>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="min-h-screen">
+<body class="font-kanit bg-gradient-to-br from-dark to-dark-secondary text-white min-h-screen">
     <header class="bg-dark-secondary py-4 px-6 shadow-md">
-        <div class="container mx-auto">
-            <div class="flex justify-between items-center">
-                <h1 class="text-3xl font-bold">
-                    <a href="/" class="flex items-center gap-2">
-                        <span class="text-primary">Plant</span><span class="text-secondary">vs</span><span class="text-white">AI</span>
-                    </a>
-                </h1>
-                <nav>
-                    <ul class="flex space-x-6">
-                        <li><a href="/" class="hover:text-primary transition-colors">หน้าหลัก</a></li>
-                        <li><a href="/games" class="text-primary">เกม</a></li>
-                        <li><a href="/about" class="hover:text-primary transition-colors">เกี่ยวกับ</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    </header>
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <a href="/" class="inline-block mb-8 text-gray-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline-block mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                กลับหน้าหลัก
+            </a>
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
+                เกม Tic Tac Toe (XO
+            </h1>
+            <p class="text-xl text-gray-400">เล่นเกม Tic Tac Toe กับ AI ระดับต่างๆ</p>
+        </header>
     
     <main class="container mx-auto py-8 px-4">
-        <h1 class="text-4xl font-bold mb-2">เกม Tic Tac Toe (XO)</h1>
-        <p class="text-gray-400 mb-8">เล่นเกม Tic Tac Toe กับ AI ระดับต่างๆ</p>
         
         <!-- Game Section -->
         <div class="bg-dark-secondary p-6 rounded-2xl shadow-lg mb-8">

@@ -29,10 +29,6 @@ def tictactoe():
     ai = request.args.get('ai', '0')
     return render_template('tictactoe.html', ai_mode=ai)
 
-@app.route('/connect_four')
-def connect_four():
-    ai = request.args.get('ai', '0')
-    return render_template('connect_four.html', ai_mode=ai)
 
 @app.route('/checkers')
 def checkers():
